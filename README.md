@@ -10,5 +10,5 @@ Later on also thermo-economic calculations are planned.
 
 Burak Atakan, University of Duisburg-Essen, Germany
 
-You can contact us at: thermodynamik [] uni.due.de
+You can contact us at: thermodynamik [a t] uni-due.de
 
