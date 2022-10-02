@@ -19,7 +19,8 @@ from fluid_properties_hl import tp, hps, xp, xT
 class heat_exchanger:
     # Heat exchanger base class
     
-    def __init__(self, fluids, mass_flows, pressures, enthalpies, name="HEX_0"):
+    def __init__(self, fluids, mass_flows, pressures, enthalpies, UA=10, 
+                 calc_type="const", name="HEX_0"):
         """
         
 
@@ -33,6 +34,13 @@ class heat_exchanger:
             initial pressures of each fluid.
         enthalpies : list or numpy-array length 2
             initial pressures of each fluid.
+        UA : float
+            overall heat transfer coefficient times area, 
+            as constant (for simple calculations), default = 10.
+        calc_type : string
+            if "const" = does not vary along heat exchanger (default)
+            if "calc" = calculated from Nusselt correlation 
+            along heat exchanger
         name: string.
             name of the heat-exchanger, default = "HEX_0"
 
@@ -45,6 +53,8 @@ class heat_exchanger:
         self.mass_flows = mass_flows
         self.pressures = pressures
         self.enthalpies = enthalpies
+        self.UA = UA
+        self.calc_type = calc_type
         self.name = name
     
     def q_max(self):
