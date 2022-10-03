@@ -34,12 +34,16 @@ dependencies = [
     "pandas"
     ]
 
+packages=['carbatpy']
 
 [tool.setuptools]
 packages = ["carbatpy"]
+[tool.setuptools.packages.find]
+where = ["src", "src/run_scripts", "src/analysis"]  # list of folders that contain the packages (["."] by default)
+# include = ["my_package*"]  # package names should match these glob patterns (["*"] by default)
+exclude = ["carbatpy.tests*"]  # exclude packages matching these glob patterns (empty by default)
+namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
 
 [project.urls]
-
-
 "Homepage" = "https://github.com/burakatakan/carbatpy",
-packages=['carbatpy'],
+
