@@ -1,0 +1,45 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Oct  3 09:27:38 2022
+
+@author: atakan
+"""
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "carbatpy",
+version = "0.0.1",
+authors = [
+    { name = "Burak Atakan", email = "batakan@uni-duisburg.de"},
+    ]
+description = ("A module to calculate and optimize Carnot Batteries \
+               (Thermal energy storage)")
+readme ='README.md'
+requires-python = ">=3.7"
+classifiers=[
+    "Development Status :: 2 - Pre-Alpha",
+    "Topic :: Scientific/Engineering",
+    "License :: OSI Approved :: MIT License",
+    ]
+keywords = ["thermal-energy-storage"," heat-exchanger",
+            " thermodynmics", "heat transfer" ]
+license = { text = "MIT"}
+dependencies = [
+    "CoolProp",
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "pandas"
+    ]
+
+
+[tool.setuptools]
+packages = ["carbatpy"]
+
+[project.urls]
+
+
+"Homepage" = "https://github.com/burakatakan/carbatpy",
+packages=['carbatpy'],
