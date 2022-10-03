@@ -95,15 +95,23 @@ def hps(h, p, fluid, option=1):
         return alle
     if option == 1:
         return [_temp, p,  h, 1/rho, s,  x]
+    
+    
 name_properties = ["temperature", "p", "x", "h",  "s", "rho", "mu",
         "cp", "lambda_s", "phase", "prandtl"]
 
-def properties_V(p, h, fluid, option=1):
+def hps_v(h, p, fluid, option=1):
     """ Vectorization of the single phase properties function"""
-    _n = len(p)
-    alle = np.zeros((11, _n))
+    _n = len(h)
+    if option ==1:
+        alle = np.zeros((6, _n))
+    else:
+        alle = np.zeros((11, _n))
     for _i in range(_n):
-        alle[:, _i] = hps(h[_i], p[_i], fluid, option=option)
+        if type(p) is float:
+            alle[:, _i] = hps(h[_i], p, fluid, option=option)
+        else:
+            alle[:, _i] = hps(h[_i], p[_i], fluid, option=option)
     return alle
 
 def tp(temp, p, fluid, option=1):
@@ -133,7 +141,7 @@ def tp(temp, p, fluid, option=1):
         T,p,h,v,s,x.
 
     """
-    fluid.update(CP.PT_INPUTS, temp, p)
+    fluid.update(CP.PT_INPUTS, p, temp)
     reihe = [CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
              CP.iconductivity, CP.iCpmass, CP.iviscosity]
     props = [fluid.keyed_output(k) for k in reihe]

@@ -14,7 +14,7 @@ Created on Sun Oct  2 16:27:20 2022
 """
 import numpy as np
 import CoolProp.CoolProp as CP
-from fluid_properties_hl import tp, hps, xp, xT
+from fluid_properties_ll import tp, hps, hps_v
 from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
 
@@ -164,8 +164,8 @@ class counterflow_hex(heat_exchanger):
             U: circumference of tube m
         function hps returns an array, the first value is temperature
         """
-        T1 = hps(h[1], self.pressures[1], self.fluids[1])[0]
-        T0 = hps(h[0], self.pressures[0], self.fluids[0])[0]
+        T1 = hps_v(h[1], self.pressures[1], self.fluids[1])[0]
+        T0 = hps_v(h[0], self.pressures[0], self.fluids[0])[0]
         q_konv = T1-T0
         
         dh0 = self.U *self.area / self.mass_flows[0]*q_konv
@@ -191,8 +191,8 @@ class counterflow_hex(heat_exchanger):
     
     def he_state(self, result, option = 0):
         if result.success:
-            states_0 = hps(result.y[0],self.pressures[0], self.fluids[0])
-            states_1 = hps(result.y[1], self.pressures[1], self.fluids[1])
+            states_0 = hps_v(result.y[0],self.pressures[0], self.fluids[0])
+            states_1 = hps_v(result.y[1], self.pressures[1], self.fluids[1])
             s0 = states_0[4]
             s1 = states_1[4]
             if option > 1:
@@ -214,10 +214,12 @@ class counterflow_hex(heat_exchanger):
 if __name__  == "__main__":
     mdot=np.array((.0029711, .0351)) # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
-    fl =["ISOBUTANE","Water"]   # which fluids?
+    fl1 = CP.AbstractState("BICUBIC&HEOS", "ISOBUTANE")
+    fl2 = CP.AbstractState("BICUBIC&HEOS", "Water")
+    fl =[fl1,fl2]   # which fluids?
     Tin = [354, 313]
     p = [6.545e5, 4.e5]  # pressure for each fluid, Pa
-    ha_in=tp(Tin[0], p[0], fl[0])[2]  # state of fluid 1 left
+    ha_in = tp(Tin[0], p[0], fl[0])[2]  # state of fluid 1 left
     hb_in=tp(Tin[1],p[1],fl[1])[2]  # state of fluide 2 right (at L)
     ha_outMax = tp(Tin[1],p[0],fl[0])[2]  # state of fluid 1 left
     hb_outMax = tp(Tin[0],p[1],fl[1])[2]  # state of fluide 2 right (at L)
@@ -230,5 +232,5 @@ if __name__  == "__main__":
     heat_ex = counterflow_hex(fl, mdot, p, [ha_in,hb_in], 
                               length, diameters, U=alpha)
     res =heat_ex.he_bvp_solve()
-    f1,f2,ds, ds_rel =heat_ex.he_state(res,5)
-    print(ds,ds_rel)
+    f1,f2,ds =heat_ex.he_state(res,5)
+    print(ds)
