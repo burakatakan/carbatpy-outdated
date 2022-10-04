@@ -39,7 +39,7 @@ def hp_exergy(h, p, fluid, T_env=__Tenv__, p_env=__penv__):
     if pr_test: print(state, state_env,dstate,"\n")
     return ex
 
-def hps(h, p, fluid, option=1):
+def hps(h, p, fluid, composition=[1.0], option=1, units =_units):
     """
     Properties needed for integration at given p and h, single phase.
 
@@ -65,17 +65,14 @@ def hps(h, p, fluid, option=1):
         T,p,h,v,s,x.
 
     """
-    fluid.update(CP.HmassP_INPUTS, h, p)
-    reihe = [CP.iT, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
-             CP.iconductivity, CP.iCpmass, CP.iviscosity]
-    props = [fluid.keyed_output(k) for k in reihe]
-    _temp, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
-    alle = np.array([_temp, p, x, h,  s, rho, mu,
-            cp, lambda_s, phase, prandtl])
+    o = RP.REFPROP2dll(fluid,"HP","T;D;S;q", units, 0, h, p, composition)
     if option == 0:
+        alle =[]
         return alle
     if option == 1:
-        return np.array([_temp, p,  h, 1/rho, s,  x])
+        alle =[o.Output[0], p, h, *o.Output[1:4]]
+        return np.array(alle)
+         
     
     
 name_properties = [
@@ -126,7 +123,7 @@ def tp(temp, p,  fluid, composition=[1.0], option=1, units =_units):
 
     """
     
-    o = RP.REFPROP2dll(fluid,"TP","H;D;S;QMASS", units, 0, temp, p, composition)
+    o = RP.REFPROP2dll(fluid,"TP","H;D;S;q", units, 0, temp, p, composition)
     
     if option == 0:
         alle =[]
@@ -206,11 +203,14 @@ if __name__ == "__main__":
     # working_fluid = CP.AbstractState("BICUBIC&HEOS", fluid_a)
     # mm = ht_properties_sat(1e6, working_fluid)
     # Sekundärfluid --------------------------------
-    fluid_s = "Water"
+    fluid_s = "Propane * Pentane"
+    comp =[.5, 0.5]
     #secondary_fluid = CP.AbstractState("TTSE&HEOS", fluid_s) 
     # interesting, when using "BICUBIC&HEOS" the exergy of the ambient state is 0.15!
-    temp_0_s = 283.15
-    print(tp(temp_0_s, p_sur, fluid_s))
+    temp_0_s = 373.15
+    state_data = tp(temp_0_s, p_sur, fluid_s, composition=comp)
+    print(state_data)
+    print(hps(state_data[2],p_sur, fluid_s, composition=comp))
     #h_0_s = tp(temp_0_s, p_sur,  secondary_fluid)[2]
     # h_end = CP.PropsSI('H', 'P', p_sur, 'T', temp_0_s, fluid_a)
     #ex1 = hp_exergy(h_0_s, p_sur, secondary_fluid)
