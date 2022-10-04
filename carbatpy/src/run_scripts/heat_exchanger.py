@@ -1,9 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Heat exchangers
-simple NTU with constant convection coefficient 
-and
-solving the bvp along an axial coordinate
+Heat exchanger base class 
+and counterflow heat exchnager class are introduced
+For the first, only the maximum possible heat flow rate s evaluated.
+For the counterflow heat exchanger at the moment the boundary value problem 
+is solved with constant overall heat transfer coefficient  along the axial 
+coordinate is implemented, together with some graphical output.
+
+Fluid properties stem from CoolProp, the low-level interface is used.
+
+Planned: 
+    -the convection coefficienets along the axial coordinate 
+    shall be evaluated using appropriate 
+    Nu-correlations
+    - optimization will be implemented (Entropy minimization)
+    - perhaps pressure drop will be implemented to the bvp
+
+
 
 if nothing else given: counterflow/double-pipe
 if nothing else is said given: steady state
@@ -24,12 +37,13 @@ class heat_exchanger:
     def __init__(self, fluids, mass_flows, pressures, enthalpies, UA=10, 
                  calc_type="const", name="HEX_0"):
         """
-        
+        Initializing the heat exchanger with fluids, mass flow rates etc.
+        at the moment pressures are constant.
 
         Parameters
         ----------
         fluids : TYPE list 
-            two coolProp-Fluid names.
+            two coolProp-Fluid abstrct states (for low level).
         mass_flows : TYPE list or numpy-array length 2
            both mass flows.
         pressures : list or numpy-array length 2
@@ -59,10 +73,11 @@ class heat_exchanger:
         self.calc_type = calc_type
         self.name = name
     
+    
     def q_max(self, option=0):
-        """ maximum possible heat transfer for isobaric, adiabatic 
+        """ maximum possible heat transfer for an isobaric, adiabatic 
         heat exchanger
-        As it is programmed now, saturated final states are not considered"""
+        """
         
         state_variables = np.zeros((2,6))
         final_states = np.zeros((2,6))
@@ -93,7 +108,11 @@ class counterflow_hex(heat_exchanger):
                  diameters, U=10, no_tubes=1, no_points=100,
                  calc_type="const", name="HEX_0"):
         """
-        
+        Counter flow heat exchanger class initialization, for double-pipe 
+        heat exchangers
+        or having no_tubes tubes inside. Now geometrical parameters and 
+        a convection coefficient are needed.
+        no_points is the initial division of the length for solving the bvp
 
         Parameters
         ----------
@@ -142,9 +161,10 @@ class counterflow_hex(heat_exchanger):
         self.name = name
         self.x = np.linspace(0, length, no_points)
         self.area = self.length * self.diameters[0] *self.no_tubes
+        self.perimeter =self.diameters[0] * np.pi
         qm, qd, f_states = self.q_max(1)
         self.min_flow = np.where(qd == qm)[0]
-        self.h_in = np.linspace(self.enthalpies[0], 
+        self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
                                     self.enthalpies[0] + qm , no_points)
         self.h_out = np.linspace(self.enthalpies[1] - qm, 
                                     self.enthalpies[1] , no_points)
@@ -152,34 +172,69 @@ class counterflow_hex(heat_exchanger):
         
     def energy(self,x,h): 
         """
-        I must think about it, whether the "self" is needed or helpful
-        energy balance 
+        energy balance for solving the boundary value problem
+        couples the energy changes of each fluid with the convective heat 
+        transfer between both fluids.
+        At the moment the convection coefficient from the heat exchanger 
+        is used;
+        this shall be evaluated later as a function of local
+        heat exchanger parameters.
         
         output: both changes in enthalpy in x-direction
         
-        depends on global variables: 
-            fl (fluid-names)
-            alpha: convection coefficient W/m2/K
-            mdot: mass flow rates kg/s
-            U: circumference of tube m
+        depends on heat-exchanger variables: 
+            fluids (fluid-names)
+            U: heat transfer coefficient W/m2/K
+            mass_flows: mass flow rates kg/s
+            perimeter: circumference of tube m
         function hps returns an array, the first value is temperature
         """
         T1 = hps_v(h[1], self.pressures[1], self.fluids[1])[0]
         T0 = hps_v(h[0], self.pressures[0], self.fluids[0])[0]
         q_konv = T1-T0
         
-        dh0 = self.U *self.area / self.mass_flows[0]*q_konv
-        dh1 = self.U *self.area / self.mass_flows[1]*q_konv
-        return np.array([dh0,dh1])
+        dh0 = self.U *self.perimeter / self.mass_flows[0]*q_konv
+        dh1 = self.U *self.perimeter / self.mass_flows[1]*q_konv
+        return np.array([dh0, dh1])
 
 
-    def bc(self, ha, hb): #boundary conditions
-        # return np.array([ha[0]-ha_in,hb[1]-hb_in,])
+    def bc(self, ha, hb): 
+        """
+        two boundary conditions for bvp-solver (scipy-optimize) needed
+        here: the enthalpies of the inner fluid at x=0 and the enthalpy of 
+        the outer fluid at the end of the heat exchanger at x=length
+
+        Parameters
+        ----------
+        ha : numpy array
+            enthalpies of the inner fluid along the x-coordinate.
+        hb : numpy array
+            enthalpies of the outer fluid along the x-coordinate.
+
+        Returns
+        -------
+        numpy array of length 2
+           the difference to the prescribed entrance conditions, should both 
+           get zero, if succesful.
+
+        """
+       
         return np.array([ha[0] - self.enthalpies[0], 
                          hb[1] - self.enthalpies[1]])
     
     
     def he_bvp_solve (self):
+        """
+        solving the boundary volume problem (scipy) for the counter-flow
+        heat exchanger
+
+        Returns
+        -------
+        result : dictionary
+           see scipy documentation, e.g. success (did it find a solution,
+                                                  the x and y values)
+
+        """
         y=np.zeros((2,self.no_points))
         y[0,:] = self.h_in
         y[1,:] = self.h_out
@@ -190,6 +245,28 @@ class counterflow_hex(heat_exchanger):
     
     
     def he_state(self, result, option = 0):
+        """
+        Evaluation of all temperatures, enthalpies, entropies etc. 
+        along the counterflow heat exchanger and plotting T if option >1
+
+        Parameters
+        ----------
+        result : TYPE
+            DESCRIPTION.
+        option : TYPE, optional
+            DESCRIPTION. The default is 0.
+
+        Returns
+        -------
+        if success == True
+        states_0 numpy array
+           resolved state variables for the inner tube(s).
+        states_1 numpy array
+           resolved state variables for the outer tube.
+        ds float
+            entropy production per mass of the heat exchanger (J/( kg K).
+
+        """
         if result.success:
             states_0 = hps_v(result.y[0],self.pressures[0], self.fluids[0])
             states_1 = hps_v(result.y[1], self.pressures[1], self.fluids[1])
@@ -212,25 +289,30 @@ class counterflow_hex(heat_exchanger):
             
     
 if __name__  == "__main__":
-    mdot=np.array((.0029711, .01)) # kg/s for both fluids
+    
+    T0 = 283.  # K
+    mdot=np.array((.0029711, .021)) # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
+    # Isobutane (hot) and water (cold)
     fl1 = CP.AbstractState("BICUBIC&HEOS", "ISOBUTANE")
     fl2 = CP.AbstractState("BICUBIC&HEOS", "Water")
     fl =[fl1,fl2]   # which fluids?
-    Tin = [354, 313]
-    p = [7.545e5, 4.e5]  # pressure for each fluid, Pa
+    Tin = [384, 313]  # initial fluid temperatures, assuming single phae each!
+    p = [7.9e5, 4.e5]  # pressure for each fluid, Pa
+    
+    #  evaluate enthalpies and maximum possible enthalpy changes:
     ha_in = tp(Tin[0], p[0], fl[0])[2]  # state of fluid 1 left
     hb_in=tp(Tin[1],p[1],fl[1])[2]  # state of fluide 2 right (at L)
     ha_outMax = tp(Tin[1],p[0],fl[0])[2]  # state of fluid 1 left
     hb_outMax = tp(Tin[0],p[1],fl[1])[2]  # state of fluide 2 right (at L)
-    
-    # heat_ex = heat_exchanger(fl, mdot, p, [ha_in,hb_in])
-    # qm = heat_ex.q_max()
-    # print (qm)
+
     diameters =[1.5e-2, 3e-2]  # m
     length = 5.  # m
+    
     heat_ex = counterflow_hex(fl, mdot, p, [ha_in,hb_in], 
-                              length, diameters, U=alpha)
-    res =heat_ex.he_bvp_solve()
-    f1,f2,ds =heat_ex.he_state(res,5)
-    print(ds)
+                              length, diameters, U=alpha)  # assign parameters
+    res =heat_ex.he_bvp_solve()  # solve the heat exchanger problem
+    
+    f1,f2,ds =heat_ex.he_state(res,5) # evaluate results (and plot)
+    print("Entropy production rate: %2.2e W/K, exergy loss rate %2.2e W" 
+          % (ds, ds * T0))
