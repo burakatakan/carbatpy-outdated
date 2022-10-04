@@ -27,7 +27,7 @@ Created on Sun Oct  2 16:27:20 2022
 """
 import numpy as np
 import CoolProp.CoolProp as CP
-from fluid_properties_ll import tp, hps, hps_v
+from fluid_properties_ll import tp, hps, hps_v, hp_exergy
 from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
 
@@ -277,7 +277,7 @@ class counterflow_hex(heat_exchanger):
                 plt.plot(result.x, states_0[0])
                 plt.plot(result.x, states_1[0])
                 plt.show()
-            ds = (s0[0] - s0[-1]) * self.mass_flows[0] + \
+            ds = (s0[-1] - s0[0]) * self.mass_flows[0] + \
                  (s1[0] - s1[-1]) * self.mass_flows[1]
             
             if option >6:
@@ -287,14 +287,23 @@ class counterflow_hex(heat_exchanger):
             print("Fehler, keine Lösung!", result.message)
             return -1, -1, -1
             
-    
+    def exergy_entering(self):
+        ex = 0
+        for n in range(2):
+            ex +=hp_exergy(self.enthalpies[n],self.pressures[n], self.fluids[n])\
+                    *self.mass_flows[n]
+        return ex
+                    
 if __name__  == "__main__":
     
     T0 = 283.  # K
     mdot=np.array((.0029711, .01)) # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
     # Isobutane (hot) and water (cold)
-    fl1 = CP.AbstractState("BICUBIC&HEOS", "ISOBUTANE")
+    fl1 = CP.AbstractState("REFPROP", "ISOBUTANE")
+    # fl1.set_mole_fractions([0.5,0.5])  
+    # fl1.build_phase_envelope("")
+    # pe_fl1 = fl1.get_phase_envelope_data()
     fl2 = CP.AbstractState("BICUBIC&HEOS", "Water")
     fl =[fl1,fl2]   # which fluids?
     Tin = [384, 313]  # initial fluid temperatures, assuming single phae each!
@@ -314,5 +323,7 @@ if __name__  == "__main__":
     res =heat_ex.he_bvp_solve()  # solve the heat exchanger problem
     
     f1,f2,ds =heat_ex.he_state(res,5) # evaluate results (and plot)
-    print("Entropy production rate: %2.2e W/K, exergy loss rate %2.2e W" 
+    ex_in = heat_ex.exergy_entering()
+    print("Entropy production rate: %2.2e W/K, exergy loss rate %3.3f W" 
           % (ds, ds * T0))
+    print("Exergy flow rate, entering: %3.3f W" % ( ex_in))
