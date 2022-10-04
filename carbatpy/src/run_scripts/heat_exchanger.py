@@ -161,7 +161,7 @@ class counterflow_hex(heat_exchanger):
         self.name = name
         self.x = np.linspace(0, length, no_points)
         self.area = self.length * self.diameters[0] *self.no_tubes
-        self.perimeter =self.diameters[0] * np.pi
+        self.perimeter =self.diameters[0] * np.pi * self.no_tubes
         qm, qd, f_states = self.q_max(1)
         self.min_flow = np.where(qd == qm)[0]
         self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
@@ -291,7 +291,7 @@ class counterflow_hex(heat_exchanger):
 if __name__  == "__main__":
     
     T0 = 283.  # K
-    mdot=np.array((.0029711, .021)) # kg/s for both fluids
+    mdot=np.array((.0029711, .01)) # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
     # Isobutane (hot) and water (cold)
     fl1 = CP.AbstractState("BICUBIC&HEOS", "ISOBUTANE")
@@ -310,7 +310,7 @@ if __name__  == "__main__":
     length = 5.  # m
     
     heat_ex = counterflow_hex(fl, mdot, p, [ha_in,hb_in], 
-                              length, diameters, U=alpha)  # assign parameters
+                              length, diameters, U=alpha, no_tubes=2)  # assign parameters
     res =heat_ex.he_bvp_solve()  # solve the heat exchanger problem
     
     f1,f2,ds =heat_ex.he_state(res,5) # evaluate results (and plot)

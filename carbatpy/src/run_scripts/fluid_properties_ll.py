@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 """
 functions to obtain fluid properties from cool prop using the low level interface
+so far for known T and P (tp()) and for known h and p (hps(). The latter
+                                                       is also vectorized 
+by hand (hps_v())
 
+The funcions for the saturated states must be checked.
 Created on Wed Dec  9 17:37:20 2020
+changes 04.10.2022
 
 @author: atakan
 """
@@ -18,44 +23,6 @@ def mdot_area_function(m_dot, diameter):
     return m_dot_area, area
 
 
-def ht_properties_sat(p, fluid):
-    """
-    Properties needed for integration at given p and h for heat transfer.
-
-    Parameters
-    ----------
-    p : float
-        pressure in Pa.
-
-    fluid :   an AbstractState in coolprop.
-
-    Returns
-    -------
-    alle : numpy array (2,4)
-        includes: tranport properies in saturated state at given pressure p
-         of liquid (0,:) and vapor(1,:),
-        densities,viscosities, cp, thermal conductivity
-
-        all in SI units.
-
-    """
-
-    props_all = np.zeros((2,4))
-    for phase in [0,1]:
-        fluid.update(CP.PQ_INPUTS, p, phase)
-        reihe = [CP.iDmass, CP.iCpmass, CP.iviscosity, CP.iconductivity]
-        props = [fluid.keyed_output(k) for k in reihe]
-        props_all[phase,:] = props[:]
-
-    return props_all
-
-
-def ht_properties_satV(p, h, fluid): # unbenutzte vektorisierung
-    _n = len(p)
-    alle = np.zeros((14, 2, _n))
-    for _i in range(_n):
-        alle[:, :, _i] = ht_properties_sat(p[_i], h[_i], fluid)
-    return alle
 
 
 def hps(h, p, fluid, option=1):
@@ -97,8 +64,11 @@ def hps(h, p, fluid, option=1):
         return [_temp, p,  h, 1/rho, s,  x]
     
     
-name_properties = ["temperature", "p", "x", "h",  "s", "rho", "mu",
-        "cp", "lambda_s", "phase", "prandtl"]
+name_properties = [
+    ["temperature", "p", "x", "h",  "s", "rho", "mu", "cp", "lambda_s", 
+     "phase", "prandtl"],
+    ["temperature", "p",  "h", "v", "s","x"] 
+    ]
 
 def hps_v(h, p, fluid, option=1):
     """ Vectorization of the single phase properties function"""
@@ -153,8 +123,49 @@ def tp(temp, p, fluid, option=1):
     if option == 1:
         return [temp, p,  h, 1/rho, s,  x]
     
-name_properties = ["temperature", "p", "x", "h",  "s", "rho", "mu",
-        "cp", "lambda_s", "phase", "prandtl"]
+
+#  below must be checked!
+
+
+def ht_properties_sat(p, fluid):
+    """
+    Properties needed for integration at given p and h for heat transfer.
+
+    Parameters
+    ----------
+    p : float
+        pressure in Pa.
+
+    fluid :   an AbstractState in coolprop.
+
+    Returns
+    -------
+    alle : numpy array (2,4)
+        includes: tranport properies in saturated state at given pressure p
+         of liquid (0,:) and vapor(1,:),
+        densities,viscosities, cp, thermal conductivity
+
+        all in SI units.
+
+    """
+
+    props_all = np.zeros((2,4))
+    for phase in [0,1]:
+        fluid.update(CP.PQ_INPUTS, p, phase)
+        reihe = [CP.iDmass, CP.iCpmass, CP.iviscosity, CP.iconductivity]
+        props = [fluid.keyed_output(k) for k in reihe]
+        props_all[phase,:] = props[:]
+
+    return props_all
+
+
+def ht_properties_satV(p, h, fluid): # unbenutzte vektorisierung
+    _n = len(p)
+    alle = np.zeros((14, 2, _n))
+    for _i in range(_n):
+        alle[:, :, _i] = ht_properties_sat(p[_i], h[_i], fluid)
+    return alle
+
 
 def properties_V(p, h, fluid, option=1):
     """ Vectorization of the single phase properties function"""
