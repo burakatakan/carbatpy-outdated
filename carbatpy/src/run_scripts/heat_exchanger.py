@@ -212,13 +212,13 @@ class counterflow_hex(heat_exchanger):
             
     
 if __name__  == "__main__":
-    mdot=np.array((.0029711, .0351)) # kg/s for both fluids
+    mdot=np.array((.0029711, .01)) # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
     fl1 = CP.AbstractState("BICUBIC&HEOS", "ISOBUTANE")
     fl2 = CP.AbstractState("BICUBIC&HEOS", "Water")
     fl =[fl1,fl2]   # which fluids?
     Tin = [354, 313]
-    p = [6.545e5, 4.e5]  # pressure for each fluid, Pa
+    p = [7.545e5, 4.e5]  # pressure for each fluid, Pa
     ha_in = tp(Tin[0], p[0], fl[0])[2]  # state of fluid 1 left
     hb_in=tp(Tin[1],p[1],fl[1])[2]  # state of fluide 2 right (at L)
     ha_outMax = tp(Tin[1],p[0],fl[0])[2]  # state of fluid 1 left
