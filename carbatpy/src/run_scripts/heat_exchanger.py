@@ -27,10 +27,10 @@ Created on Sun Oct  2 16:27:20 2022
 """
 import numpy as np
 import CoolProp.CoolProp as CP
-from fluid_properties_ll import tp, hps, hps_v, hp_exergy
+from fluid_properties_rp import tp, hps, hps_v, hp_exergy
 from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
-
+props = "CoolProp"
 class heat_exchanger:
     # Heat exchanger base class
     
@@ -74,7 +74,7 @@ class heat_exchanger:
         self.name = name
     
     
-    def q_max(self, option=0):
+    def q_max(self, option=0,props=props):
         """ maximum possible heat transfer for an isobaric, adiabatic 
         heat exchanger
         """
@@ -85,11 +85,11 @@ class heat_exchanger:
         
         for n in range(2): # get initial states (Temperatures)
             state_variables[n,:] = hps(self.enthalpies[n],self.pressures[n], 
-                                       self.fluids[n])
+                                       self.fluids[n], props=props)
         final_states[0,:] = tp(state_variables[1, 0],state_variables[0, 1], 
-                             self.fluids[0])
+                             self.fluids[0], props=props)
         final_states[1,:] = tp(state_variables[0, 0],state_variables[1, 1], 
-                             self.fluids[1])
+                             self.fluids[1], props=props)
         for n in range(2):
             q_dot[n] = self.mass_flows[n] * (final_states[n, 2] 
                                              - state_variables[n, 2])
@@ -189,8 +189,8 @@ class counterflow_hex(heat_exchanger):
             perimeter: circumference of tube m
         function hps returns an array, the first value is temperature
         """
-        T1 = hps_v(h[1], self.pressures[1], self.fluids[1])[0]
-        T0 = hps_v(h[0], self.pressures[0], self.fluids[0])[0]
+        T1 = hps_v(h[1], self.pressures[1], self.fluids[1], props=props)[0]
+        T0 = hps_v(h[0], self.pressures[0], self.fluids[0], props=props)[0]
         q_konv = T1-T0
         
         dh0 = self.U *self.perimeter / self.mass_flows[0]*q_konv
@@ -268,8 +268,10 @@ class counterflow_hex(heat_exchanger):
 
         """
         if result.success:
-            states_0 = hps_v(result.y[0],self.pressures[0], self.fluids[0])
-            states_1 = hps_v(result.y[1], self.pressures[1], self.fluids[1])
+            states_0 = hps_v(result.y[0],self.pressures[0], 
+                             self.fluids[0], props=props)
+            states_1 = hps_v(result.y[1], self.pressures[1], 
+                             self.fluids[1], props=props)
             s0 = states_0[4]
             s1 = states_1[4]
             if option > 1:
@@ -297,23 +299,26 @@ class counterflow_hex(heat_exchanger):
 if __name__  == "__main__":
     
     T0 = 283.  # K
+    props = "CoolProp"
     mdot=np.array((.0029711, .01)) # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
+    Tin = [384, 313]  # initial fluid temperatures, assuming single phae each!
+    p = [7.9e5, 4.e5]  # pressure for each fluid, Pa
     # Isobutane (hot) and water (cold)
-    fl1 = CP.AbstractState("REFPROP", "ISOBUTANE")
+    fl_names = ["ISOBUTANE", "WATER"]
+    fl1 = CP.AbstractState("REFPROP", fl_names[0])
     # fl1.set_mole_fractions([0.5,0.5])  
     # fl1.build_phase_envelope("")
     # pe_fl1 = fl1.get_phase_envelope_data()
-    fl2 = CP.AbstractState("BICUBIC&HEOS", "Water")
+    fl2 = CP.AbstractState("BICUBIC&HEOS", fl_names[1])
     fl =[fl1,fl2]   # which fluids?
-    Tin = [384, 313]  # initial fluid temperatures, assuming single phae each!
-    p = [7.9e5, 4.e5]  # pressure for each fluid, Pa
+    
     
     #  evaluate enthalpies and maximum possible enthalpy changes:
-    ha_in = tp(Tin[0], p[0], fl[0])[2]  # state of fluid 1 left
-    hb_in=tp(Tin[1],p[1],fl[1])[2]  # state of fluide 2 right (at L)
-    ha_outMax = tp(Tin[1],p[0],fl[0])[2]  # state of fluid 1 left
-    hb_outMax = tp(Tin[0],p[1],fl[1])[2]  # state of fluide 2 right (at L)
+    ha_in = tp(Tin[0], p[0], fl[0], props=props)[2]  # state of fluid 1 left
+    hb_in=tp(Tin[1],p[1],fl[1], props=props)[2]  # state of fluide 2 right (at L)
+    ha_outMax = tp(Tin[1],p[0],fl[0], props=props)[2]  # state of fluid 1 left
+    hb_outMax = tp(Tin[0],p[1],fl[1], props=props)[2]  # state of fluide 2 right (at L)
 
     diameters =[1.5e-2, 3e-2]  # m
     length = 5.  # m
