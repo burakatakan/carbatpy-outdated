@@ -106,7 +106,8 @@ class heat_exchanger:
 class counterflow_hex(heat_exchanger):
     def __init__(self, fluids, mass_flows, pressures, enthalpies, length, 
                  diameters, U=10, no_tubes=1, no_points=100,
-                 calc_type="const", name="HEX_0"):
+                 calc_type="const", name="HEX_0", compositions =[[1.0],[1.0]],
+                 props="REFPROP", units=2):
         """
         Counter flow heat exchanger class initialization, for double-pipe 
         heat exchangers
@@ -134,13 +135,22 @@ class counterflow_hex(heat_exchanger):
             number of inner tubes. The default is 1.
         no_points : integer
             No of initial points along x, for solving the bvp.
-            
+        
         calc_type : string
             if "const" = does not vary along heat exchanger (default)
             if "calc" = calculated from Nusselt correlation 
             along heat exchanger
         name: string.
             name of the heat-exchanger, default = "HEX_0"
+        composition s: list of lists
+            in each list the mole fraction of each compound in each fluid is
+            listed. Two pure fluids: [[1.0],[1.0]
+        props: "REFPROP or "CoolProp""
+            module to evaluate fluid properties
+        units: integer
+            selection of units (for REFPROP, generally SI)
+        
+                
 
         Returns
         -------
@@ -149,6 +159,9 @@ class counterflow_hex(heat_exchanger):
         """
         
         self.fluids = fluids
+        self.compositions = compositions
+        self.props = props
+        self.units = units
         self.mass_flows = mass_flows
         self.pressures = pressures
         self.enthalpies = enthalpies
@@ -189,8 +202,10 @@ class counterflow_hex(heat_exchanger):
             perimeter: circumference of tube m
         function hps returns an array, the first value is temperature
         """
-        T1 = hps_v(h[1], self.pressures[1], self.fluids[1], props=props)[0]
-        T0 = hps_v(h[0], self.pressures[0], self.fluids[0], props=props)[0]
+        T1 = hps_v(h[1], self.pressures[1], self.fluids[1], units=self.units,
+                   props=self.props, option =1, composition=self.compositions[1])[0]
+        T0 = hps_v(h[0], self.pressures[0], self.fluids[0], units=self.units,
+                   props=self.props, option =1, composition=self.compositions[0])[0]
         q_konv = T1-T0
         
         dh0 = self.U *self.perimeter / self.mass_flows[0]*q_konv
@@ -269,9 +284,11 @@ class counterflow_hex(heat_exchanger):
         """
         if result.success:
             states_0 = hps_v(result.y[0],self.pressures[0], 
-                             self.fluids[0], props=props)
+                             self.fluids[0], props=self.props, units=self.units,
+                             composition=self.compositions[0])
             states_1 = hps_v(result.y[1], self.pressures[1], 
-                             self.fluids[1], props=props)
+                             self.fluids[1], props=self.props, units=self.units,
+                             composition=self.compositions[1])
             s0 = states_0[4]
             s1 = states_1[4]
             if option > 1:
@@ -292,7 +309,7 @@ class counterflow_hex(heat_exchanger):
     def exergy_entering(self):
         ex = 0
         for n in range(2):
-            ex +=hp_exergy(self.enthalpies[n],self.pressures[n], self.fluids[n])\
+            ex +=hp_exergy(self.enthalpies[n],self.pressures[n], self.fluids[n], props=self.props)\
                     *self.mass_flows[n]
         return ex
                     
@@ -324,7 +341,7 @@ if __name__  == "__main__":
     length = 5.  # m
     
     heat_ex = counterflow_hex(fl, mdot, p, [ha_in,hb_in], 
-                              length, diameters, U=alpha, no_tubes=2)  # assign parameters
+                              length, diameters, U=alpha, no_tubes=2, props=props)  # assign parameters
     res =heat_ex.he_bvp_solve()  # solve the heat exchanger problem
     
     f1,f2,ds =heat_ex.he_state(res,5) # evaluate results (and plot)

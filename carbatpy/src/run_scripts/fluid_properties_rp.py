@@ -23,6 +23,7 @@ _props ="REFPROP"  # or "CoolProp"
 if _props =="REFPROP":
     RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
     _units = RP.GETENUMdll(0, "MASS BASE SI").iEnum # be careful pressure is in kPa!
+else: _units = 2
 
 
 __Tenv__ = 283.15 # Temp. of the environment in K
@@ -97,18 +98,21 @@ name_properties = [
     ["temperature", "p",  "h", "v", "s","x"] 
     ]
 
-def hps_v(h, p, fluid, option=1, props=_props):
+def hps_v(h, p, fluid, composition=[1.0], option=1, units =_units, props=_props):
     """ Vectorization of the single phase properties function"""
     _n = len(h)
+    
     if option ==1:
         alle = np.zeros((6, _n))
     else:
         alle = np.zeros((11, _n))
     for _i in range(_n):
         if type(p) is float:
-            alle[:, _i] = hps(h[_i], p, fluid, option=option, props=props)
+            alle[:, _i] = hps(h[_i], p, fluid, composition=[1.0], option=1, 
+                              units =_units, props=props)
         else:
-            alle[:, _i] = hps(h[_i], p[_i], fluid, option=option, props=props)
+            alle[:, _i] = hps(h[_i], p[_i], fluid, composition=[1.0], option=1, 
+                              units =_units, props=props)
     return alle
 
 def tp(temp, p,  fluid, composition=[1.0], option=1, units =_units, 
