@@ -100,7 +100,7 @@ class heat_exchanger:
         if np.abs(q_dot[0]) > np.abs(q_dot[1]):
             q_max = q_dot[1]
         else: q_max = q_dot[0]
-        print (q_dot,final_states)
+        print ("Max. heat flow rates of both fluids: %3.2f W, %3.2f W" % (q_dot[0],q_dot[1]))
         if option == 0:
             return q_max
         if option == 1:
@@ -296,10 +296,16 @@ class counterflow_hex(heat_exchanger):
             s0 = states_0[4]
             s1 = states_1[4]
             if option > 1:
-                plt.figure()
-                plt.plot(result.x, states_0[0])
-                plt.plot(result.x, states_1[0])
-                plt.show()
+                fi, ax =plt.subplots(1,2)
+                ax[0].plot(result.x, states_0[0])
+                ax[0].plot(result.x, states_1[0])
+                ax[0].set_xlabel("length / m")
+                ax[0].set_ylabel("temperature / K")
+                ax[1].plot((states_0[2]-states_0[2][-1]) * self.mass_flows[0], states_0[0])
+                ax[1].plot((states_1[2]-states_1[2][-1]) * self.mass_flows[1], states_1[0])
+                ax[1].set_xlabel("H_dot / W")
+                ax[1].set_ylabel("temperature / K")
+                # fi.show()
             ds = (s0[-1] - s0[0]) * self.mass_flows[0] + \
                  (s1[0] - s1[-1]) * self.mass_flows[1]
             
