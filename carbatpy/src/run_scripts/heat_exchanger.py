@@ -85,11 +85,14 @@ class heat_exchanger:
         
         for n in range(2): # get initial states (Temperatures)
             state_variables[n,:] = hps(self.enthalpies[n],self.pressures[n], 
-                                       self.fluids[n], props=self.props)
+                                       self.fluids[n], props=self.props,
+                                       composition=self.compositions[n])
         final_states[0,:] = tp(state_variables[1, 0],state_variables[0, 1], 
-                             self.fluids[0], props=self.props)
+                             self.fluids[0], props=self.props,
+                             composition=self.compositions[0])
         final_states[1,:] = tp(state_variables[0, 0],state_variables[1, 1], 
-                             self.fluids[1], props=self.props)
+                             self.fluids[1], props=self.props,
+                             composition=self.compositions[1])
         for n in range(2):
             q_dot[n] = self.mass_flows[n] * (final_states[n, 2] 
                                              - state_variables[n, 2])
@@ -97,7 +100,7 @@ class heat_exchanger:
         if np.abs(q_dot[0]) > np.abs(q_dot[1]):
             q_max = q_dot[1]
         else: q_max = q_dot[0]
-        print (q_dot)
+        print (q_dot,final_states)
         if option == 0:
             return q_max
         if option == 1:
@@ -107,7 +110,7 @@ class counterflow_hex(heat_exchanger):
     def __init__(self, fluids, mass_flows, pressures, enthalpies, length, 
                  diameters, U=10, no_tubes=1, no_points=100,
                  calc_type="const", name="HEX_0", compositions =[[1.0],[1.0]],
-                 props="REFPROP", units=2):
+                 props="REFPROP", units=21):
         """
         Counter flow heat exchanger class initialization, for double-pipe 
         heat exchangers
@@ -177,6 +180,7 @@ class counterflow_hex(heat_exchanger):
         self.perimeter =self.diameters[0] * np.pi * self.no_tubes
         qm, qd, f_states = self.q_max(1)
         self.min_flow = np.where(qd == qm)[0]
+        qm_specific =qm/self.mass_flows[self.min_flow]
         self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
                                     self.enthalpies[0] + qm , no_points)
         self.h_out = np.linspace(self.enthalpies[1] - qm, 
@@ -316,7 +320,7 @@ class counterflow_hex(heat_exchanger):
 if __name__  == "__main__":
     
     T0 = 283.  # K
-    props = "CoolProp"  # "REFPROP"
+    props = "REFPROP"  # "CoolProp"  # "REFPROP"
     mdot=np.array((.00329711, .025)) # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
     Tin = [354, 309]  # initial fluid temperatures, assuming single phae each!
@@ -333,21 +337,31 @@ if __name__  == "__main__":
         # pe_fl1 = fl1.get_phase_envelope_data()
         fl2 = CP.AbstractState("BICUBIC&HEOS", fl_names[1])
         fl =[fl1,fl2]   # which fluids?
+        compositions =[[1], [1.]]
     if props == "REFPROP":
-        fl = fl_names
+        fl1 ="Isobutane * Pentane"
+        fl2 = "Water"
+        compositions =[[.95,.05],[ 1.]]
+        # fl = fl_names
+        fl =[fl1,fl2]
     
     
     
     #  evaluate enthalpies and maximum possible enthalpy changes:
-    ha_in = tp(Tin[0], p[0], fl[0], props=props)[2]  # state of fluid 1 left
-    hb_in=tp(Tin[1],p[1],fl[1], props=props)[2]  # state of fluide 2 right (at L)
-    ha_outMax = tp(Tin[1],p[0],fl[0], props=props)[2]  # state of fluid 1 left
-    hb_outMax = tp(Tin[0],p[1],fl[1], props=props)[2]  # state of fluide 2 right (at L)
+    ha_in = tp(Tin[0], p[0], fl[0], props=props, 
+               composition=compositions[0])[2]  # state of fluid 1 left
+    hb_in=tp(Tin[1],p[1],fl[1], props=props, 
+             composition =compositions[1])[2]  # state of fluide 2 right (at L)
+    ha_outMax = tp(Tin[1],p[0],fl[0], props=props, 
+                   composition=compositions[0])[2]  # state of fluid 1 left
+    hb_outMax = tp(Tin[0],p[1],fl[1], props=props, 
+                   composition =compositions[1])[2]  # state of fluide 2 right (at L)
 
     
     
     heat_ex = counterflow_hex(fl, mdot, p, [ha_in,hb_in], 
-                              length, diameters, U=alpha, no_tubes=2, props=props)  # assign parameters
+                              length, diameters, U=alpha, no_tubes=2, 
+                              props=props, compositions =compositions)  # assign parameters
     res =heat_ex.he_bvp_solve()  # solve the heat exchanger problem
     
     f1,f2,ds =heat_ex.he_state(res,5) # evaluate results (and plot)

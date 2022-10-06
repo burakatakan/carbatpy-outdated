@@ -34,10 +34,12 @@ def mdot_area_function(m_dot, diameter):
     m_dot_area = m_dot / area
     return m_dot_area, area
 
-def hp_exergy(h, p, fluid, T_env=__Tenv__, p_env=__penv__, props=_props):
+def hp_exergy(h, p, fluid, T_env=__Tenv__, p_env=__penv__, props=_props, 
+              composition=[1.0]):
     pr_test = False
-    state_env = tp(T_env, p_env, fluid, option =1, props=props)
-    state = hps(h, p, fluid, props=props) 
+    state_env = tp(T_env, p_env, fluid, option =1, props=props, 
+                   composition=composition)
+    state = hps(h, p, fluid, props=props, composition=composition) 
     dstate = state - state_env
     ex = dstate[2] - __Tenv__ * dstate[4]
     if pr_test: print(state, state_env,dstate,"\n")
@@ -108,11 +110,11 @@ def hps_v(h, p, fluid, composition=[1.0], option=1, units =_units, props=_props)
         alle = np.zeros((11, _n))
     for _i in range(_n):
         if type(p) is float:
-            alle[:, _i] = hps(h[_i], p, fluid, composition=[1.0], option=1, 
-                              units =_units, props=props)
+            alle[:, _i] = hps(h[_i], p, fluid, composition, option, 
+                              units, props)
         else:
-            alle[:, _i] = hps(h[_i], p[_i], fluid, composition=[1.0], option=1, 
-                              units =_units, props=props)
+            alle[:, _i] = hps(h[_i], p[_i], fluid, composition, option, 
+                              units, props)
     return alle
 
 def tp(temp, p,  fluid, composition=[1.0], option=1, units =_units, 
