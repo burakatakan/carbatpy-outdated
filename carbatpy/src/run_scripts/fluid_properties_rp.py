@@ -22,8 +22,8 @@ from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
 _props ="REFPROP"  # or "CoolProp"
 if _props =="REFPROP":
     RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
-    _units = RP.GETENUMdll(0, "MASS BASE SI").iEnum # be careful pressure is in kPa!
-else: _units = 2
+    _units = RP.GETENUMdll(0, "MASS BASE SI").iEnum # be careful pressure is in Pa!
+else: _units = 21
 
 
 __Tenv__ = 283.15 # Temp. of the environment in K

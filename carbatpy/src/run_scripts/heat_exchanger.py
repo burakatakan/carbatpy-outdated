@@ -74,7 +74,7 @@ class heat_exchanger:
         self.name = name
     
     
-    def q_max(self, option=0,props=props):
+    def q_max(self, option=0):
         """ maximum possible heat transfer for an isobaric, adiabatic 
         heat exchanger
         """
@@ -85,11 +85,11 @@ class heat_exchanger:
         
         for n in range(2): # get initial states (Temperatures)
             state_variables[n,:] = hps(self.enthalpies[n],self.pressures[n], 
-                                       self.fluids[n], props=props)
+                                       self.fluids[n], props=self.props)
         final_states[0,:] = tp(state_variables[1, 0],state_variables[0, 1], 
-                             self.fluids[0], props=props)
+                             self.fluids[0], props=self.props)
         final_states[1,:] = tp(state_variables[0, 0],state_variables[1, 1], 
-                             self.fluids[1], props=props)
+                             self.fluids[1], props=self.props)
         for n in range(2):
             q_dot[n] = self.mass_flows[n] * (final_states[n, 2] 
                                              - state_variables[n, 2])
@@ -316,19 +316,26 @@ class counterflow_hex(heat_exchanger):
 if __name__  == "__main__":
     
     T0 = 283.  # K
-    props = "CoolProp"
-    mdot=np.array((.0029711, .01)) # kg/s for both fluids
+    props = "CoolProp"  # "REFPROP"
+    mdot=np.array((.00329711, .025)) # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
-    Tin = [384, 313]  # initial fluid temperatures, assuming single phae each!
+    Tin = [354, 309]  # initial fluid temperatures, assuming single phae each!
     p = [7.9e5, 4.e5]  # pressure for each fluid, Pa
-    # Isobutane (hot) and water (cold)
-    fl_names = ["ISOBUTANE", "WATER"]
-    fl1 = CP.AbstractState("REFPROP", fl_names[0])
-    # fl1.set_mole_fractions([0.5,0.5])  
-    # fl1.build_phase_envelope("")
-    # pe_fl1 = fl1.get_phase_envelope_data()
-    fl2 = CP.AbstractState("BICUBIC&HEOS", fl_names[1])
-    fl =[fl1,fl2]   # which fluids?
+    diameters =[1.5e-2, 5e-2]  # m
+    length = 3.  # m
+    fl_names = ["ISOBUTANE", "NONANE"]
+    if props =="CoolProp":
+        # Isobutane (hot) and water (cold)
+        
+        fl1 = CP.AbstractState("REFPROP", fl_names[0])
+        # fl1.set_mole_fractions([0.5,0.5])  
+        # fl1.build_phase_envelope("")
+        # pe_fl1 = fl1.get_phase_envelope_data()
+        fl2 = CP.AbstractState("BICUBIC&HEOS", fl_names[1])
+        fl =[fl1,fl2]   # which fluids?
+    if props == "REFPROP":
+        fl = fl_names
+    
     
     
     #  evaluate enthalpies and maximum possible enthalpy changes:
@@ -337,8 +344,7 @@ if __name__  == "__main__":
     ha_outMax = tp(Tin[1],p[0],fl[0], props=props)[2]  # state of fluid 1 left
     hb_outMax = tp(Tin[0],p[1],fl[1], props=props)[2]  # state of fluide 2 right (at L)
 
-    diameters =[1.5e-2, 3e-2]  # m
-    length = 5.  # m
+    
     
     heat_ex = counterflow_hex(fl, mdot, p, [ha_in,hb_in], 
                               length, diameters, U=alpha, no_tubes=2, props=props)  # assign parameters
