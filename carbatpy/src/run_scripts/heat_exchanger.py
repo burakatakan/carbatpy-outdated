@@ -31,6 +31,8 @@ from fluid_properties_rp import tp, hps, hps_v, hp_exergy
 from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
 props = "CoolProp"
+
+
 class heat_exchanger:
     # Heat exchanger base class
     
@@ -295,7 +297,7 @@ class counterflow_hex(heat_exchanger):
                              composition=self.compositions[1])
             s0 = states_0[4]
             s1 = states_1[4]
-            if option > 1:
+            if option > 5:
                 fi, ax =plt.subplots(1,2)
                 ax[0].plot(result.x, states_0[0])
                 ax[0].plot(result.x, states_1[0])
@@ -308,10 +310,11 @@ class counterflow_hex(heat_exchanger):
                 # fi.show()
             ds = (s0[-1] - s0[0]) * self.mass_flows[0] + \
                  (s1[0] - s1[-1]) * self.mass_flows[1]
+            dh2 = (states_1[2][0] - states_1[2][-1]) * self.mass_flows[1]
             
-            if option >6:
-                print("Entropieproduktion:%3.2f, relativ: %2.2f" % (ds))
-            return states_0, states_1, ds
+            if option >0:
+                print("Entropieproduktion:%3.2f" % (ds))
+            return states_0, states_1, ds, dh2
         else: 
             print("Fehler, keine Lösung!", result.message)
             return -1, -1, -1
@@ -327,10 +330,10 @@ if __name__  == "__main__":
     
     T0 = 283.  # K
     props = "REFPROP"  # "CoolProp"  # "REFPROP"
-    mdot=np.array((.00329711, .025)) # kg/s for both fluids
+    mdot=np.array((.015, .025)) # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
     Tin = [354, 309]  # initial fluid temperatures, assuming single phae each!
-    p = [7.9e5, 4.e5]  # pressure for each fluid, Pa
+    p = [5e5, 4.e5]  # pressure for each fluid, Pa
     diameters =[1.5e-2, 5e-2]  # m
     length = 3.  # m
     fl_names = ["ISOBUTANE", "NONANE"]
@@ -345,9 +348,9 @@ if __name__  == "__main__":
         fl =[fl1,fl2]   # which fluids?
         compositions =[[1], [1.]]
     if props == "REFPROP":
-        fl1 ="Isobutane * Pentane"
+        fl1 ="Propane * Pentane"
         fl2 = "Water"
-        compositions =[[.95,.05],[ 1.]]
+        compositions =[[.65,.35],[ 1.]]
         # fl = fl_names
         fl =[fl1,fl2]
     
@@ -370,8 +373,8 @@ if __name__  == "__main__":
                               props=props, compositions =compositions)  # assign parameters
     res =heat_ex.he_bvp_solve()  # solve the heat exchanger problem
     
-    f1,f2,ds =heat_ex.he_state(res,5) # evaluate results (and plot)
+    f1, f2, ds, dq = heat_ex.he_state(res, 6) # evaluate results (and plot)
     ex_in = heat_ex.exergy_entering()
-    print("Entropy production rate: %2.2e W/K, exergy loss rate %3.3f W" 
-          % (ds, ds * T0))
+    print("Entropy production rate: %2.2e W/K, exergy loss rate %3.3f W, dq %3.2f" 
+          % (ds, ds * T0, dq))
     print("Exergy flow rate, entering: %3.3f W" % ( ex_in))

@@ -103,13 +103,12 @@ name_properties = [
 def hps_v(h, p, fluid, composition=[1.0], option=1, units =_units, props=_props):
     """ Vectorization of the single phase properties function"""
     _n = len(h)
-    
     if option ==1:
         alle = np.zeros((6, _n))
     else:
         alle = np.zeros((11, _n))
     for _i in range(_n):
-        if type(p) is float:
+        if np.isscalar(p):
             alle[:, _i] = hps(h[_i], p, fluid, composition, option, 
                               units, props)
         else:
