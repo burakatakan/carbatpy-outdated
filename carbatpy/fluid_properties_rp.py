@@ -171,21 +171,21 @@ def tp(temp, p,  fluid, composition=[1.0], option=1, units =_units,
 def p_prop_sat(p,  fluid, composition=[1.0], option=1, units =_units, 
        props=_props): # HIER geht's weiter
     """
-    Properties needed for integration at given p and h for heat transfer.
+    Saturation state properties at given p for a certain fluid (mixture).
 
     Parameters
     ----------
     p : float
         pressure in Pa.
 
-    fluid :   an AbstractState in coolprop.
+    fluid :   an AbstractState in coolprop or a fluid in REFPROP.
 
     Returns
     -------
     alle : numpy array (2,4)
-        includes: tranport properies in saturated state at given pressure p
+        includes:  properies in saturated state at given pressure p
          of liquid (0,:) and vapor(1,:),
-        densities,viscosities, cp, thermal conductivity
+        T, p, h, v,s, q
 
         all in SI units.
 
