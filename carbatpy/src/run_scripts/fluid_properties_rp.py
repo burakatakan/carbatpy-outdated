@@ -168,7 +168,8 @@ def tp(temp, p,  fluid, composition=[1.0], option=1, units =_units,
 #  below must be checked!
 
 
-def ht_properties_sat(p, fluid):
+def p_prop_sat(p,  fluid, composition=[1.0], option=1, units =_units, 
+       props=_props): # HIER geht's weiter
     """
     Properties needed for integration at given p and h for heat transfer.
 
@@ -189,24 +190,30 @@ def ht_properties_sat(p, fluid):
         all in SI units.
 
     """
+    vap_liq =[]
+    for qq in [1, 0]:
+        if props == "REFPROP":
+            o = RP.REFPROP2dll(fluid,"PQ","T;H;D;S", units, 0, p, qq, composition)
+            if option == 0:
+                alle =[]
+                
+            elif option == 1:
+                alle =[o.Output[0], p, o.Output[1], 1 / o.Output[2], o.Output[3], qq]
+                vap_liq.append(np.array(alle))
+        elif props =="CoolProp":
+            pass
 
-    props_all = np.zeros((2,4))
-    for phase in [0,1]:
-        fluid.update(CP.PQ_INPUTS, p, phase)
-        reihe = [CP.iDmass, CP.iCpmass, CP.iviscosity, CP.iconductivity]
-        props = [fluid.keyed_output(k) for k in reihe]
-        props_all[phase,:] = props[:]
 
-    return props_all
+    return np.array(vap_liq)
 
-
+"""
 def ht_properties_satV(p, h, fluid): # unbenutzte vektorisierung
     _n = len(p)
     alle = np.zeros((14, 2, _n))
     for _i in range(_n):
         alle[:, :, _i] = ht_properties_sat(p[_i], h[_i], fluid)
     return alle
-
+"""
 
 def properties_V(p, h, fluid, option=1):
     """ Vectorization of the single phase properties function"""
@@ -220,7 +227,7 @@ if __name__ == "__main__":
         
     # _vielPrint__ = False
     
-    _props ="CoolProp"
+    _props ="REFPROP"
     x_0 = 1.
     p_0 = 20e5     # Anfangsdruck Pa
     
@@ -238,23 +245,24 @@ if __name__ == "__main__":
         
         h_0 = CP.PropsSI('H', 'P', p_0, 'T', temp_0 + 1, fluid_a)
         working_fluid = CP.AbstractState("BICUBIC&HEOS", fluid_a)
-        mm = ht_properties_sat(1e6, working_fluid)
+        # mm = ht_properties_sat(1e6, working_fluid)
         secondary_fluid = CP.AbstractState("TTSE&HEOS", fluid_s) 
         h_0_s = tp(temp_0_s, p_sur,  secondary_fluid, props=_props)[2]
         h_end = CP.PropsSI('H', 'P', p_sur, 'T', temp_0_s, fluid_a)
     elif _props == "REFPROP":
         # Sekundärfluid --------------------------------
         fluid_s = "Propane * Pentane"
-        comp =[.5, 0.5]
+        comp =[1., 0.0]
         #secondary_fluid = CP.AbstractState("TTSE&HEOS", fluid_s) 
         # interesting, when using "BICUBIC&HEOS" the exergy of the ambient state is 0.15!
         
         state_data = tp(temp_0_s, p_sur, fluid_s, composition=comp)
         print(state_data)
         print(hps(state_data[2],p_sur, fluid_s, composition=comp))
-    h_0_s = tp(temp_0_s, p_sur,  secondary_fluid, props=_props)[2]
-    h_end = CP.PropsSI('H', 'P', p_sur, 'T', temp_0_s, fluid_a)
-    ex1 = hp_exergy(h_0_s, p_sur, secondary_fluid, props=_props)
-    ex2 = hp_exergy(h_0, p_sur, working_fluid, props=_props)
-    print( "Exergies (J/kg):", ex1, ex2)
+    # h_0_s = tp(temp_0_s, p_sur,  secondary_fluid, props=_props)[2]
+    # h_end = CP.PropsSI('H', 'P', p_sur, 'T', temp_0_s, fluid_a)
+    # ex1 = hp_exergy(h_0_s, p_sur, secondary_fluid, props=_props)
+    # ex2 = hp_exergy(h_0, p_sur, working_fluid, props=_props)
+    # print( "Exergies (J/kg):", ex1, ex2)
+    print(p_prop_sat(p_0, fluid_s, composition=comp,props=_props))
     
