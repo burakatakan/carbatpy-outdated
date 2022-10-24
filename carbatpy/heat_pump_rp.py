@@ -33,11 +33,11 @@ eta = .65
 p = np.array([6, 15]) * 1e5
 
 
-FLUIDMODEL = "REFPROP"
+FLUIDMODEL = "REFPROP" # "REFPROP"  # "CoolProp" CoolProp" #
+_props = FLUIDMODEL  # or "CoolProp"
 if FLUIDMODEL == "REFPROP":
     os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
     from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
-    _props ="REFPROP"  # or "CoolProp"
     working_fluid = fluid_a
     if _props =="REFPROP":
         RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
@@ -47,140 +47,9 @@ if FLUIDMODEL == "REFPROP":
 elif FLUIDMODEL == "CoolProp":
     # h_0 = CP.PropsSI('H', 'P', p_0, 'T', temp_0, fluid_a)
     working_fluid = CP.AbstractState("HEOS", fluid_a)
+    _units = 21
     
 
-
-
-def prop_pt(p, _temp, fluid):
-    """
-    Properties needed for integration at given p and h, single phase.
-
-    Parameters
-    ----------
-    p : float
-        pressure in Pa.
-    _temp : float
-        Temperature in K.
-    fluid :   an AbstractState in coolprop.
-
-    Returns
-    -------
-    alle : numpy array
-        includes: T, p , quality, specific enthalpy,entropy
-        densities,
-        viscosities, cp , conductivity,phase prandtl-number
-        at the defined state (p,h)
-        all in SI units.
-
-    """
-    fluid.update(CP.PT_INPUTS, p, _temp)
-    reihe = [CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
-             CP.iconductivity, CP.iCpmass, CP.iviscosity,
-             CP.iisobaric_expansion_coefficient, ]
-    props = [fluid.keyed_output(k) for k in reihe]
-    h, x, s, rho, prandtl, phase, lambda_s, cp, mu, beta = props[:]
-    alle = [_temp, p, x, h,  s, rho, mu,
-            cp, lambda_s, phase, prandtl, beta * _temp]
-    return alle
-
-
-def prop_ps(p, s, fluid):
-    """
-    Properties needed for integration at given p and h, single phase.
-
-    Parameters
-    ----------
-    p : float
-        pressure in Pa.
-    s : float
-        specific entropy in J/kg/K.
-    fluid :   an AbstractState in coolprop.
-
-    Returns
-    -------
-    alle : numpy array
-        includes: T, p , quality, specific enthalpy,entropy
-        densities,
-        viscosities, cp , conductivity,phase prandtl-number
-        at the defined state (p,h)
-        all in SI units.
-
-    """
-    fluid.update(CP.PSmass_INPUTS, p, s)
-    reihe = [CP.iHmass, CP.iQ, CP.iT, CP.iDmass, CP.iPrandtl, CP.iPhase,
-             CP.iconductivity, CP.iCpmass, CP.iviscosity,
-             CP.iisobaric_expansion_coefficient, ]
-    props = [fluid.keyed_output(k) for k in reihe]
-    h, x, _temp, rho, prandtl, phase, lambda_s, cp, mu, beta = props[:]
-    alle = [_temp, p, x, h,  s, rho, mu,
-            cp, lambda_s, phase, prandtl]
-    return alle
-
-
-def prop_ph(p, h, fluid):
-    """
-    Properties needed for integration at given p and h, single phase.
-
-    Parameters
-    ----------
-    p : float
-        pressure in Pa.
-    h : float
-        specific enthalpy in J/kg.
-    fluid :   an AbstractState in coolprop.
-
-    Returns
-    -------
-    alle : numpy array
-        includes: T, p , quality, specific enthalpy,entropy
-        densities,
-        viscosities, cp , conductivity,phase prandtl-number
-        at the defined state (p,h)
-        all in SI units.
-
-    """
-    fluid.update(CP.HmassP_INPUTS, h, p)
-    reihe = [CP.iT, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
-             CP.iconductivity, CP.iCpmass, CP.iviscosity]
-    props = [fluid.keyed_output(k) for k in reihe]
-    _temp, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
-    alle = [_temp, p, x, h,  s, rho, mu,
-            cp, lambda_s, phase, prandtl]
-
-    return alle
-
-
-def prop_pq(p, q, fluid):
-    """
-    Properties needed for integration at given p and h, single phase.
-
-    Parameters
-    ----------
-    p : float
-        pressure in Pa.
-    q : float
-        quality (0-1).
-    fluid :   an AbstractState in coolprop.
-
-    Returns
-    -------
-    alle : numpy array
-        includes: T, p , quality, specific enthalpy,entropy
-        densities,
-        viscosities, cp , conductivity,phase prandtl-number
-        at the defined state (p,h)
-        all in SI units.
-
-    """
-    fluid.update(CP.PQ_INPUTS, p, q)
-    reihe = [CP.iT, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
-             CP.iconductivity, CP.iCpmass, CP.iviscosity, CP.iHmass]
-    props = [fluid.keyed_output(k) for k in reihe]
-    _temp, x, s, rho, prandtl, phase, lambda_s, cp, mu, h = props[:]
-    alle = [_temp, p, x, h,  s, rho, mu,
-            cp, lambda_s, phase, prandtl]
-
-    return alle
 
 
 def check_bound(p, bounds):
@@ -263,6 +132,7 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, rootfind =True, optim=False,
 
     """
     problem = 0
+    druck = False
     if bounds!= None:
         inside = check_bound(p, bounds)
     else:
@@ -270,10 +140,7 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, rootfind =True, optim=False,
     if inside:
         p = np.abs(p)
         m_dot = p[2]
-        if _props == "REFPROP":
-            state = np.zeros((8, 6))
-        else:
-            state = np.zeros((8, 11))
+        state = np.zeros((8, 6))
         diff = np.zeros((3))
         q_w = np. zeros((4))
         try:
@@ -326,7 +193,7 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, rootfind =True, optim=False,
         if rootfind:
             return diff
         elif optim:
-            print(eta_rational, m_dot, p,A ,"opti" )
+            if druck: print(eta_rational, m_dot, p,A ,"opti" )
             return eta_rational
         else:
             
@@ -368,7 +235,7 @@ if __name__ == "__main__":
               % (p_compr, q_h_dot))
         
     if optimierung:
-        bou = [(5e4, 4e5), (14e5, 2.5e6), (0.017, 0.023), (0.8, 3), (1, 5)]
+        bou = [(5e4, 4e5), (14e5, 2.5e6), (0.015, 0.026), (0.8, 3), (1, 5)]
         
         opti_loes = opti.shgo(lambda x:  heat_pump_opti(x,eta, U, temp, 
                                                         working_fluid, bou), bou)

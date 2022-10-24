@@ -261,7 +261,18 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units =_units,
                 alle =[o.Output[0], p, o.Output[1], 1 / o.Output[2], o.Output[3], qq]
                 vap_liq.append(np.array(alle))
         elif props =="CoolProp":
-            pass
+            fluid.update(CP.PQ, p, qq)
+            reihe = [CP.iT, CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
+                     CP.iconductivity, CP.iCpmass, CP.iviscosity]
+            props = [fluid.keyed_output(k) for k in reihe]
+            temp, h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
+            
+            if option == 0:
+                alle = np.array([temp, p, x, h,  s, rho, mu,
+                        cp, lambda_s, phase, prandtl])
+            elif option == 1:
+                alle = np.array( [temp, p,  h, 1/rho, s,  x])
+                vap_liq.append(alle)
 
 
     return np.array(vap_liq)
@@ -301,7 +312,18 @@ def prop_pq(p, q, fluid, composition=[1.0], option=1, units =_units,
             alle =[o.Output[0], p, o.Output[1], 1 / o.Output[2], o.Output[3], q]
             
     elif props =="CoolProp":
-        pass
+        fluid.update(CP.PQ_INPUTS, p, q)
+        reihe = [CP.iT, CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
+                 CP.iconductivity, CP.iCpmass, CP.iviscosity]
+        props = [fluid.keyed_output(k) for k in reihe]
+        temp, h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
+        
+        if option == 0:
+            alle = np.array([temp, p, x, h,  s, rho, mu,
+                    cp, lambda_s, phase, prandtl])
+        elif option == 1:
+            alle =  [temp, p,  h, 1/rho, s,  x]
+            
 
 
     return np.array(alle)
