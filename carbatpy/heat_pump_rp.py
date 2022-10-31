@@ -28,7 +28,7 @@ import os
     
 fluid_a = "Propane * Pentane"
 composition = [.90, 0.100]  # .950, 0.050]
-temp = np.array([279, 330])  # source and sink Temperature
+temp = np.array([279, 340])  # source and sink Temperature
 eta = .65
 p = np.array([6, 15]) * 1e5
 
@@ -227,8 +227,8 @@ if __name__ == "__main__":
     areas = np.array([(12 * np.pi * diameter), (28 * np.pi * diameter)]) * 1.3 # sehr nichtlinear!
     p0 = np.array([1e5, 22e5, 0.0068])  # Propan np.array([4e5, 19e5, 0.008])
     bou = [(5e4, 4e5), (14e5, 2.5e6), (0.0051, 0.09), 
-        (0.8, 4), (1, 7),
-        (0.2, 0.79)]
+        (0.8, 9), (1, 17),
+        (0.02, 0.99)]
  
     loes = opti.root(heat_pump_ht, p0,
                      args=(eta, U, areas, temp, working_fluid,composition,
