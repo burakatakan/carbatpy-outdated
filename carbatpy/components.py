@@ -16,9 +16,48 @@ _props = "REFPROP"
 _units = 21
 
 class machine:
+    """ Base Class for machines (compressors and expanders)"""
     def __init__(self, mdot, hin, pin, pout, eta_s, 
                  fluid, composition=[1.0], option=1, units =_units, 
            props=_props):
+        """
+        Base class for machines (expanders and compressors) will be calculated 
+        with different property modules (like REFEPROP)
+
+        Parameters
+        ----------
+        mdot : float
+            mass flow rate in kg/s.
+        hin : float
+            specific enthalpy of the fluid at the entrance in J/kg.
+        pin : float
+            pressure at the entrance in Pa.
+        pout : float
+            pressure at the exit in Pa.
+        eta_s : float
+            isentropic efficiency.
+        fluid : depends on property model (props)
+            fluid or fluid mixture (name).
+        composition : depends on property model, optional
+            molar composition of the fluid mixture. The default is [1.0].
+        option : integer, optional
+           if more properties are needed, this option is passed to the evaluation
+           of the property model. The default is 1.
+        units : integer, optional
+            important: the units of the model has to be set to SI units (J, kg, Pa, K).
+            The default is _units.
+        props : String, optional
+            either "REFPROP", "TREND" or "CoolProp", only the first is implemented 
+            so far. The default is _props ("REFPROP").
+
+        Returns
+        -------
+        None.
+        But the exit state, specific work and power are evaluated in the 
+        derived classes
+
+        """
+        
         n_properties = 6
         self.m_dot =mdot
         self.h_in =hin
