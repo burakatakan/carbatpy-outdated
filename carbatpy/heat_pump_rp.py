@@ -26,8 +26,8 @@ import os
 # p_0 = 1.013e5
 # temp_0 = 300
     
-fluid_a = "Propane"
-composition = [1.0]
+fluid_a = "Propane * Pentane"
+composition = [.90, 0.100]  # .950, 0.050]
 temp = np.array([279, 330])  # source and sink Temperature
 eta = .65
 p = np.array([6, 15]) * 1e5
@@ -62,17 +62,25 @@ def check_bound(p, bounds):
 
 def heat_pump_opti(para, eta, U, T_s, working_fluid, bounds):
     p = para[:3]
-    areas = para[3:]
+    areas = para[3:5]
+    # only binary mixture so far!
+    composition = [para[-1], 1-para[-1]]
+    #composition = "%1.3f, %1.3f" % (comp[0], comp[1])
+    
+    
     #print("p,a",p, areas)
     loes = opti.root(heat_pump_ht, p,
-                     args=(eta, U, areas, T_s, working_fluid,True, False),
+                     args=(eta, U, areas, T_s, working_fluid,composition,
+                           True, 
+                           False),
                      options={"factor": .25})
-    # print(loes)
+    print(loes)
     if loes.success:
         p = loes.x[:3]
         A = areas
-        # print(loes.x, p,A)
-        rat_eff = heat_pump_ht(p, eta, U, A, T_s, working_fluid, 
+        
+        print("\danach\n",loes.x)
+        rat_eff = heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition,
                                rootfind =False, optim=True)
         return -rat_eff
     else:
@@ -82,7 +90,8 @@ def heat_pump_opti(para, eta, U, T_s, working_fluid, bounds):
 
 
 
-def heat_pump_ht(p, eta, U, A, T_s, working_fluid, rootfind =True, optim=False,
+def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition =[1.0], 
+                 rootfind =True, optim=False,
                  bounds=None):
     """
     Heat pump cycle with isothermal source and sink, x=0 after condenser.
@@ -158,7 +167,8 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, rootfind =True, optim=False,
         q_w[0] = (state[1, 2] - state[0, 2]) / eta
         
         # kondensatoreintritt:
-        state[2, :] = fprop.hp(state[0, 2] + q_w[0], p[1],  working_fluid, composition, 
+        state[2, :] = fprop.hp(state[0, 2] + q_w[0], p[1],  working_fluid, 
+                               composition, 
                                 option=1, units =_units, props=_props)
         if state[2, 0] < T_s[1]: problem = 2
         # print ("Problem:", problem, p)
@@ -184,7 +194,7 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, rootfind =True, optim=False,
         diff[0] = q_w[3] - q_v  # passt der Druck im Verdampfer zum Waermestrom?
         diff[1] = (state[7, 2] - state[2, 2]) - (q_kond + q_w[1])  # Kondensation incl. Gas
         diff[2] = state[7, 2] - state[6, 2] - q_kond  # nur Kondensation
-        # print (q_w, q_kond, q_v)
+        # print (m_dot,composition, q_w, q_kond, q_v)
         if problem > 0:
             diff[:] = 1e7
         cop = -q_w[1:3].sum()/q_w[0]
@@ -215,15 +225,43 @@ if __name__ == "__main__":
     optimierung = True
     U = np.array([1300, 250, 1300])
     areas = np.array([(12 * np.pi * diameter), (28 * np.pi * diameter)]) * 1.3 # sehr nichtlinear!
-    p0 = np.array([2e5, 25e5, 0.018])  # Propan np.array([4e5, 19e5, 0.008])
-
+    p0 = np.array([1e5, 22e5, 0.0068])  # Propan np.array([4e5, 19e5, 0.008])
+    bou = [(5e4, 4e5), (14e5, 2.5e6), (0.0051, 0.09), 
+        (0.8, 4), (1, 7),
+        (0.2, 0.79)]
+ 
     loes = opti.root(heat_pump_ht, p0,
-                     args=(eta, U, areas, temp, working_fluid),
+                     args=(eta, U, areas, temp, working_fluid,composition,
+                           True, False, bou),
                      options={"factor": .25})
     if loes.success:
     
         st, qw, A_hg, cop, cop_carnot, eta_rat, p_compr, q_h_dot = \
-            heat_pump_ht(loes.x, eta, U, areas, temp, working_fluid, False)
+            heat_pump_ht(loes.x, eta, U, areas, temp, working_fluid, 
+                         composition,
+                         False)
+        sortierung =[0, 1, 3, 4, 2, 0]  # order of the states along the cycle
+        plt.axhline(temp[0])
+        plt.axhline(temp[1])
+        plt.plot(st[sortierung,4],st[sortierung,0], ":o")
+    
+        print("COP: %2.2f, COP(Carnot): %2.2f, eta(rational): %2.2f"
+              % (cop, cop_carnot, eta_rat))
+        print("P-Compressor/W: %3.2f, Q_dot-highT/W: %3.2f"
+              % (p_compr, q_h_dot))
+        
+    if optimierung:
+       
+        opti_loes = opti.shgo(lambda x:  heat_pump_opti(x, eta, U, temp, 
+                                             working_fluid, bou), bou)
+                                    
+        print( "\nUsed model:\n", FLUIDMODEL, "\n\n", opti_loes)
+        composition_opt = [opti_loes.x[-1],  1-opti_loes.x[-1]]
+        st, qw, A_hg, cop, cop_carnot, eta_rat, p_compr, q_h_dot = \
+            heat_pump_ht(opti_loes.x[:3], eta, U, opti_loes.x[3:5], 
+                         temp, working_fluid, 
+                         composition_opt,
+                         False)
         sortierung =[0, 1, 3, 4, 2, 0]  # order of the states along the cycle
         plt.axhline(temp[0])
         plt.axhline(temp[1])
@@ -233,14 +271,6 @@ if __name__ == "__main__":
               % (cop, cop_carnot, eta_rat))
         print("P-Compressor/W: %3.2f, Q_dot-highT/W: %3.2f"
               % (p_compr, q_h_dot))
-        
-    if optimierung:
-        bou = [(5e4, 4e5), (14e5, 2.5e6), (0.015, 0.026), (0.8, 3), (1, 5)]
-        
-        opti_loes = opti.shgo(lambda x:  heat_pump_opti(x,eta, U, temp, 
-                                                        working_fluid, bou), bou)
-                                    
-        print("\n\n",opti_loes)
         
         
             
