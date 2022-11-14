@@ -16,6 +16,7 @@ changes 04.10.2022
 import numpy as np
 import CoolProp.CoolProp as CP
 import os
+from time import time
 
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
 from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
@@ -78,10 +79,13 @@ def hp(h, p, fluid, composition=[1.0], option=1, units =_units, props=_props):
 
     """
     if props == "REFPROP":
-        o = RP.REFPROP2dll(fluid,"HP","T;D;S;q", units, 0, h, p, composition)
+        
         if option == 0:
-            alle =[]
+            o = RP.REFPROP2dll(fluid,"HP","T;D;S;q;CP;VIS;TCX;PRANDTL;KV", units, 0, h, p, composition)
+            alle =[o.Output[0], p, h, 1/o.Output[1], *o.Output[2:9]]
+            if alle[8] < 0 : print("error in hp, probably saturated")
         if option == 1:
+            o = RP.REFPROP2dll(fluid,"HP","T;D;S;q", units, 0, h, p, composition)
             alle =[o.Output[0], p, h, 1/o.Output[1], *o.Output[2:4]]
             
     elif props =="CoolProp":
@@ -245,21 +249,25 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units =_units,
     alle : numpy array (2,4)
         includes:  properies in saturated state at given pressure p
          of liquid (0,:) and vapor(1,:),
-        T, p, h, v,s, q
-
+        1: T, p, h, v,s, q
+        0:  T p h v s q cp, viscosity, thermal conductivity, Pr, kinematic viscosity
         all in SI units.
 
     """
     vap_liq =[]
     for qq in [1, 0]:
         if props == "REFPROP":
-            o = RP.REFPROP2dll(fluid,"PQ","T;H;D;S", units, 0, p, qq, composition)
+            
             if option == 0:
-                alle =[]
+                o = RP.REFPROP2dll(fluid,"PQ","T;H;D;S;CP;VIS;TCX;PRANDTL;KV", units, 0, p, qq, composition)
+                alle =[o.Output[0], p, o.Output[1], 1 / o.Output[2], o.Output[3], qq, *o.Output[4:9]]
+                vap_liq.append(np.array(alle))
                 
             elif option == 1:
+                o = RP.REFPROP2dll(fluid,"PQ","T;H;D;S", units, 0, p, qq, composition)
                 alle =[o.Output[0], p, o.Output[1], 1 / o.Output[2], o.Output[3], qq]
                 vap_liq.append(np.array(alle))
+                
         elif props =="CoolProp":
             fluid.update(CP.PQ, p, qq)
             reihe = [CP.iT, CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
@@ -291,6 +299,13 @@ def prop_pq(p, q, fluid, composition=[1.0], option=1, units =_units,
         quality
 
     fluid :   an AbstractState in coolprop or a fluid in REFPROP.
+    composition: list of floats
+        mole fraction of each fluid.
+    option: integer
+        1: only T p h v s and q
+        
+    units: integer
+        select units (SI of property model, for REFPROP: 21)
 
     Returns
     -------
@@ -353,7 +368,7 @@ if __name__ == "__main__":
     
     _props ="REFPROP"
     x_0 = 1.
-    p_0 = 20e5     # Anfangsdruck Pa
+    p_0 = 1e5     # Anfangsdruck Pa
     
     
     temp_sur = 283.15
@@ -376,13 +391,19 @@ if __name__ == "__main__":
     elif _props == "REFPROP":
         # Sekundärfluid --------------------------------
         fluid_s = "Propane * Pentane"
-        comp =[1., 0.0]
+        comp =[.4, 0.6]
         #secondary_fluid = CP.AbstractState("TTSE&HEOS", fluid_s) 
         # interesting, when using "BICUBIC&HEOS" the exergy of the ambient state is 0.15!
-        
+        t0=time()
         state_data = tp(temp_0_s, p_sur, fluid_s, composition=comp)
-        print(state_data)
+        print(state_data, time()-t0)
         print(hp(state_data[2],p_sur, fluid_s, composition=comp))
+        fluid_s = "Water"
+        t0=time()
+        alles = p_prop_sat(p_0,fluid_s,option=0)
+        print("Watter with transport", p_prop_sat(p_0,fluid_s,option=0), "\n", time() - t0)
+        print("Water with error(sat)",hp(alles[0][2],p_sur, fluid_s, option =0))
+        print("Water single phase without error",hp(alles[0][2] + 1e3, p_sur, fluid_s, option =0))
     # h_0_s = tp(temp_0_s, p_sur,  secondary_fluid, props=_props)[2]
     # h_end = CP.PropsSI('H', 'P', p_sur, 'T', temp_0_s, fluid_a)
     # ex1 = hp_exergy(h_0_s, p_sur, secondary_fluid, props=_props)

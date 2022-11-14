@@ -123,7 +123,7 @@ class counterflow_hex(heat_exchanger):
         Parameters
         ----------
         fluids : TYPE list 
-            two coolProp-Fluid names.
+            two coolProp or Refprop-Fluid names.
         mass_flows : TYPE list or numpy-array length 2
            both mass flows.
         pressures : list or numpy-array length 2
