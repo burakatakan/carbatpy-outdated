@@ -114,7 +114,7 @@ def hp(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
 
 def sp(s, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
     """
-    Properties needed for integration at given p and h, single phase.
+    Properties needed for integration at given s and p, single phase.
 
     Parameters
     ----------
@@ -194,7 +194,7 @@ def hp_v(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
 def tp(temp, p,  fluid, composition=[1.0], option=1, units=_units,
        props=_props):
     """
-    Properties needed for integration at given p and h, single phase.
+    Properties needed for integration at given T and h, single phase.
 
     Parameters
     ----------
@@ -260,7 +260,7 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
     -------
     alle : numpy array (2,4)
         includes:  properies in saturated state at given pressure p
-         of liquid (0,:) and vapor(1,:),
+         of liquid (1,:) and vapor(0,:),
         1: T, p, h, v,s, q
         0:  T p h v s q cp, viscosity, thermal conductivity, Pr, kinematic viscosity
         all in SI units.
@@ -299,6 +299,62 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
         vap_liq.append(np.array(alle))
     return np.array(vap_liq)
 
+
+
+def T_prop_sat(T,  fluid, composition=[1.0], option=1, units=_units,
+               props=_props):  # HIER geht's weiter
+    """
+    Saturation state properties at given p for a certain fluid (mixture).
+
+    Parameters
+    ----------
+    pT: float
+        Temperature in K.
+
+    fluid :   an AbstractState in coolprop or a fluid in REFPROP.
+
+    Returns
+    -------
+    alle : numpy array (2,4)
+        includes:  properies in saturated state at given pressure p
+         of liquid (0,:) and vapor(1,:),
+        1: T, p, h, v,s, q
+        0:  T p h v s q cp, viscosity, thermal conductivity, Pr, kinematic viscosity
+        all in SI units.
+
+    """
+    vap_liq = []
+    for qq in [1, 0]:
+        if props == "REFPROP":
+
+            if option == 0:
+                o = RP.REFPROP2dll(
+                    fluid, "TQ", "P;H;D;S;CP;VIS;TCX;PRANDTL;KV", units, 0, T, qq, composition)
+                alle = [T, o.Output[0], o.Output[1], 1 /
+                        o.Output[2], o.Output[3], qq, *o.Output[4:9]]
+
+            elif option == 1:
+                o = RP.REFPROP2dll(fluid, "TQ", "P;H;D;S",
+                                   units, 0, T, qq, composition)
+                alle = [T, o.Output[0],  o.Output[1],
+                        1 / o.Output[2], o.Output[3], qq]
+
+        elif props == "CoolProp":
+            fluid.update(CP.QT,  qq, T)
+            reihe = [CP.iP, CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
+                     CP.iconductivity, CP.iCpmass, CP.iviscosity]
+            props = [fluid.keyed_output(k) for k in reihe]
+            p, h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
+
+            if option == 0:
+                alle = [T, p, x, h,  s, rho, mu,
+                        cp, lambda_s, phase, prandtl]
+
+            elif option == 1:
+                alle = [T, p,  h, 1/rho, s,  x]
+
+        vap_liq.append(np.array(alle))
+    return np.array(vap_liq)
 
 def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
             props=_props):  # HIER geht's weiter
@@ -413,7 +469,7 @@ if __name__ == "__main__":
         fluid_s = "Water"
         t0 = time()
         alles = p_prop_sat(p_0, fluid_s, option=0)
-        print("Watter with transport", p_prop_sat(
+        print("Water with transport", p_prop_sat(
             p_0, fluid_s, option=0), "\n", time() - t0)
         print("Water with error(sat)", hp(
             alles[0][2], p_sur, fluid_s, option=0))

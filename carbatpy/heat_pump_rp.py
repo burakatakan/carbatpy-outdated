@@ -27,8 +27,9 @@ import os
 # temp_0 = 300
     
 fluid_a = "Propane * Pentane"
-composition = [.90, 0.100]  # .950, 0.050]
-temp = np.array([279, 340])  # source and sink Temperature
+x1 =.98
+composition =  [x1, 1-x1]  # .950, 0.050][0.9, 0.1]  #
+temp = np.array([273, 330])  # source and sink Temperature
 eta = .65
 p = np.array([6, 15]) * 1e5
 
@@ -214,6 +215,7 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition =[1.0],
             return state, q_w, A_hg, cop, cop_carnot, eta_rational,\
                 p_compr,  q_h_dot
     else:
+        print("Out of bounds", inside, p, bounds[:len(p)])
         if rootfind:
             return np.ones(3) * 1e5
         else:
@@ -222,11 +224,11 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition =[1.0],
 if __name__ == "__main__":
     diameter = 15e-3  # tube diameter in m
     schleif = False
-    optimierung = True
+    optimierung = False
     U = np.array([1300, 250, 1300])
-    areas = np.array([(12 * np.pi * diameter), (28 * np.pi * diameter)]) * 1.3 # sehr nichtlinear!
+    areas = np.array([(12 * np.pi * diameter), (28 * np.pi * diameter)]) * .5 # sehr nichtlinear!
     p0 = np.array([1e5, 22e5, 0.0068])  # Propan np.array([4e5, 19e5, 0.008])
-    bou = [(5e4, 4e5), (14e5, 2.5e6), (0.0051, 0.09), 
+    bou = [(5e4, 4.9e5), (5e5, 3.5e6), (0.0041, 0.09), 
         (0.8, 9), (1, 17),
         (0.02, 0.99)]
  
@@ -244,6 +246,11 @@ if __name__ == "__main__":
         plt.axhline(temp[0])
         plt.axhline(temp[1])
         plt.plot(st[sortierung,4],st[sortierung,0], ":o")
+        Vdot = loes.x[-1]*st[0,3]*3600  # m3/h
+        P_comp = loes.x[-1]*(st[1,2]-st[0,2])
+        print ("Vdot %2.2f m3/h, P = %3.1f W"%(Vdot,P_comp))
+        print ("p0: %2.2f bar, p1: =%3.1f bar, mdot: %1.4f (%2.1f)" % 
+               (st[0,1]/1e5,st[1,1]/1e5, loes.x[-1],loes.x[-1]*3600))
     
         print("COP: %2.2f, COP(Carnot): %2.2f, eta(rational): %2.2f"
               % (cop, cop_carnot, eta_rat))

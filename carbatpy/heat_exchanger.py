@@ -27,7 +27,7 @@ Created on Sun Oct  2 16:27:20 2022
 """
 import numpy as np
 import CoolProp.CoolProp as CP
-from fluid_properties_rp import tp, hps, hps_v, hp_exergy
+from fluid_properties_rp import tp, hp, hp_v, hp_exergy
 from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
 props = "CoolProp"
@@ -86,7 +86,7 @@ class heat_exchanger:
         q_dot = np.zeros((2))
         
         for n in range(2): # get initial states (Temperatures)
-            state_variables[n,:] = hps(self.enthalpies[n],self.pressures[n], 
+            state_variables[n,:] = hp(self.enthalpies[n],self.pressures[n], 
                                        self.fluids[n], props=self.props,
                                        composition=self.compositions[n])
         final_states[0,:] = tp(state_variables[1, 0],state_variables[0, 1], 
@@ -206,11 +206,11 @@ class counterflow_hex(heat_exchanger):
             U: heat transfer coefficient W/m2/K
             mass_flows: mass flow rates kg/s
             perimeter: circumference of tube m
-        function hps returns an array, the first value is temperature
+        function hp returns an array, the first value is temperature
         """
-        T1 = hps_v(h[1], self.pressures[1], self.fluids[1], units=self.units,
+        T1 = hp_v(h[1], self.pressures[1], self.fluids[1], units=self.units,
                    props=self.props, option =1, composition=self.compositions[1])[0]
-        T0 = hps_v(h[0], self.pressures[0], self.fluids[0], units=self.units,
+        T0 = hp_v(h[0], self.pressures[0], self.fluids[0], units=self.units,
                    props=self.props, option =1, composition=self.compositions[0])[0]
         q_konv = T1-T0
         
@@ -289,10 +289,10 @@ class counterflow_hex(heat_exchanger):
 
         """
         if result.success:
-            states_0 = hps_v(result.y[0],self.pressures[0], 
+            states_0 = hp_v(result.y[0],self.pressures[0], 
                              self.fluids[0], props=self.props, units=self.units,
                              composition=self.compositions[0])
-            states_1 = hps_v(result.y[1], self.pressures[1], 
+            states_1 = hp_v(result.y[1], self.pressures[1], 
                              self.fluids[1], props=self.props, units=self.units,
                              composition=self.compositions[1])
             s0 = states_0[4]
