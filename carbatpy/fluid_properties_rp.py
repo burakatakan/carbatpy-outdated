@@ -312,12 +312,12 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
 
     Returns
     -------
-    alle : numpy array (2,4)
-        includes:  properies in saturated state at given pressure p
-         of  vapor(0,:),and liquid (1,:) 
-        1: T, p, h, v,s, q
-        0:  T p h v s q cp, viscosity, thermal conductivity, Pr, kinematic viscosity
-        all in SI units.
+    alle :  numpy array (2,4)
+            includes:  properies in saturated state at given pressure p
+            of  vapor(0,:),and liquid (1,:) 
+            [1] T, p, h, v,s, q
+            [0]  T p h v s q cp, viscosity, thermal conductivity, Pr, kinematic viscosity
+            all in SI units.
 
     """
     vap_liq = []
@@ -372,11 +372,11 @@ def T_prop_sat(temp,  fluid, composition=[1.0], option=1, units=_units,
 
     Returns
     -------
-    alle : numpy array (2,4)
+    alle :  numpy array (2,4)
         includes:  properies in saturated state at given pressure p
-         of liquid (0,:) and vapor(1,:),
-        1: T, p, h, v,s, q
-        0:  T p h v s q cp, viscosity, thermal conductivity, Pr, 
+        of liquid (0,:) and vapor(1,:),
+        [1] T, p, h, v,s, q
+        [0]  T p h v s q cp, viscosity, thermal conductivity, Pr, 
         kinematic viscosity
         all in SI units.
 
@@ -435,7 +435,7 @@ def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
     composition: list of floats
         mole fraction of each fluid.
     option: integer
-        1: only T p h v s and q
+        [1] only T p h v s and q
 
     units: integer
         select units (SI of property model, for REFPROP: 21)
