@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-functions to obtain fluid properties from cool prop using the low level interface
-so far for known T and P (tp()) and for known h and p (hps(). The latter
-                                                       is also vectorized 
-by hand (hps_v())
+Functions to obtain fluid properties from REFPROP or CoolProp using the low 
+level interface. (Set _props accordingly)
+Mainly used for thermodynamic cycle calculations.
+So far for several combinations of (input) parameters in the single-phase or 
+saturated regime. For the ouput it can be mostly chosen, whether transport 
+properties are als returned, besides the thermodynamiic properties. 
+Functions are also vectorized by hand (Name:"..._v). Physical exergies can be calculated for a state of known h and p.
 
-The funcions for the saturated states must be checked.
-Created on Wed Dec  9 17:37:20 2020
-changes 04.10.2022
+Standard units: SI (J, kg, Pa, K,...)
+
+changes 30.11.2022
 
 @author: atakan
+
 """
 
 
@@ -34,6 +38,24 @@ __penv__ = 1.013e5  # Pressure of the environment in Pa
 
 
 def mdot_area_function(m_dot, diameter):
+    """
+    Calculate the mass flux through a tube and the orthogonal area 
+
+    Parameters
+    ----------
+    m_dot : float
+        mass flow rate (kg/s).
+    diameter : float
+        of the tube (m).
+
+    Returns
+    -------
+    m_dot_area : float
+        in kg/(s m2).
+    area : float
+        in m2.
+
+    """
     area = np.pi * (diameter / 2)**2
     m_dot_area = m_dot / area
     return m_dot_area, area
@@ -41,6 +63,33 @@ def mdot_area_function(m_dot, diameter):
 
 def hp_exergy(h, p, fluid, T_env=__Tenv__, p_env=__penv__, props=_props,
               composition=[1.0]):
+    """
+    calculate the specific exergy of a fluid from given enthalpy and pressure
+
+    Parameters
+    ----------
+    h : float
+        specific enthalpy (J/kg).
+    p : float
+        pressure (Pa).
+    fluid : depends on model, as defined with props(REFPROP, CoolProp etc.)
+        define the fluid(mixture).
+    T_env : float, optional
+        temperature (K) of the environment. The default is __Tenv__.
+    p_env : float, optional
+        pressure (Pa) of the environment. The default is __penv__.
+    props : TYPE, optional
+        define the fluid module to use. The default is _props.
+    composition : depends on model, optional
+        mole fractions of the different compounds, should add to 1. 
+        The default is [1.0].
+
+    Returns
+    -------
+    ex : float
+        specific exergy (J/kg).
+
+    """
     pr_test = False
     state_env = tp(T_env, p_env, fluid, option=1, props=props,
                    composition=composition)
@@ -54,7 +103,8 @@ def hp_exergy(h, p, fluid, T_env=__Tenv__, p_env=__penv__, props=_props,
 
 def hp(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
     """
-    Properties needed for integration at given p and h, single phase.
+    Properties needed for integration at given  values of pressure 
+    and specific enthalpy, single phase.
 
     Parameters
     ----------
@@ -175,7 +225,7 @@ name_properties = [
 
 
 def hp_v(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
-    """ Vectorization of the single phase properties function"""
+    """ Vectorization of the single phase properties function, see: hp"""
     _n = len(h)
     if option == 1:
         alle = np.zeros((6, _n))
@@ -194,15 +244,17 @@ def hp_v(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
 def tp(temp, p,  fluid, composition=[1.0], option=1, units=_units,
        props=_props):
     """
-    Properties needed for integration at given T and h, single phase.
+    Properties needed for integration at given temperature and pressure, 
+    single phase. 
+    option 0 (many properties) not yet implemented for REFPROP!
 
     Parameters
     ----------
 
-    p : float
-        pressure in Pa.
     temp : float
          temperature in K.
+    p : float
+        pressure in Pa.
 
     fluid :   an AbstractState in coolprop.
 
@@ -245,14 +297,14 @@ def tp(temp, p,  fluid, composition=[1.0], option=1, units=_units,
 
 
 def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
-               props=_props):  # HIER geht's weiter
+               props=_props):
     """
     Saturation state properties at given p for a certain fluid (mixture).
 
     Parameters
     ----------
     p : float
-        pressure in Pa.
+        saturation pressure in Pa.
 
     fluid :   an AbstractState in coolprop or a fluid in REFPROP.
 
@@ -260,7 +312,7 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
     -------
     alle : numpy array (2,4)
         includes:  properies in saturated state at given pressure p
-         of liquid (1,:) and vapor(0,:),
+         of  vapor(0,:),and liquid (1,:) 
         1: T, p, h, v,s, q
         0:  T p h v s q cp, viscosity, thermal conductivity, Pr, kinematic viscosity
         all in SI units.
@@ -300,15 +352,14 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
     return np.array(vap_liq)
 
 
-
-def T_prop_sat(T,  fluid, composition=[1.0], option=1, units=_units,
+def T_prop_sat(temp,  fluid, composition=[1.0], option=1, units=_units,
                props=_props):  # HIER geht's weiter
     """
-    Saturation state properties at given p for a certain fluid (mixture).
+    Saturation state properties at given temperature for a certain fluid (mixture).
 
     Parameters
     ----------
-    pT: float
+    temp: float
         Temperature in K.
 
     fluid :   an AbstractState in coolprop or a fluid in REFPROP.
@@ -329,37 +380,39 @@ def T_prop_sat(T,  fluid, composition=[1.0], option=1, units=_units,
 
             if option == 0:
                 o = RP.REFPROP2dll(
-                    fluid, "TQ", "P;H;D;S;CP;VIS;TCX;PRANDTL;KV", units, 0, T, qq, composition)
-                alle = [T, o.Output[0], o.Output[1], 1 /
+                    fluid, "TQ", "P;H;D;S;CP;VIS;TCX;PRANDTL;KV", units, 0, temp, qq, composition)
+                alle = [temp, o.Output[0], o.Output[1], 1 /
                         o.Output[2], o.Output[3], qq, *o.Output[4:9]]
 
             elif option == 1:
                 o = RP.REFPROP2dll(fluid, "TQ", "P;H;D;S",
-                                   units, 0, T, qq, composition)
-                alle = [T, o.Output[0],  o.Output[1],
+                                   units, 0, temp, qq, composition)
+                alle = [temp, o.Output[0],  o.Output[1],
                         1 / o.Output[2], o.Output[3], qq]
 
         elif props == "CoolProp":
-            fluid.update(CP.QT,  qq, T)
+            fluid.update(CP.QT,  qq, temp)
             reihe = [CP.iP, CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
                      CP.iconductivity, CP.iCpmass, CP.iviscosity]
             props = [fluid.keyed_output(k) for k in reihe]
             p, h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
 
             if option == 0:
-                alle = [T, p, x, h,  s, rho, mu,
+                alle = [temp, p, x, h,  s, rho, mu,
                         cp, lambda_s, phase, prandtl]
 
             elif option == 1:
-                alle = [T, p,  h, 1/rho, s,  x]
+                alle = [temp, p,  h, 1/rho, s,  x]
 
         vap_liq.append(np.array(alle))
     return np.array(vap_liq)
 
+
 def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
             props=_props):  # HIER geht's weiter
     """
-    Saturation state properties at given p for a certain fluid (mixture).
+    Saturation state properties at given pressure  and quality for a certain 
+    fluid (mixture).
 
     Parameters
     ----------
@@ -387,7 +440,7 @@ def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
         all in SI units.
 
     """
-    vap_liq = []
+
     if props == "REFPROP":
         o = RP.REFPROP2dll(fluid, "PQ", "T;H;D;S", units, 0, p, q, composition)
         if option == 0:
@@ -411,25 +464,6 @@ def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
             alle = [temp, p,  h, 1/rho, s,  x]
 
     return np.array(alle)
-
-
-"""
-def ht_properties_satV(p, h, fluid): # unbenutzte vektorisierung
-    _n = len(p)
-    alle = np.zeros((14, 2, _n))
-    for _i in range(_n):
-        alle[:, :, _i] = ht_properties_sat(p[_i], h[_i], fluid)
-    return alle
-"""
-
-
-def properties_V(p, h, fluid, option=1):
-    """ Vectorization of the single phase properties function"""
-    _n = len(p)
-    alle = np.zeros((11, _n))
-    for _i in range(_n):
-        alle[:, _i] = hp(h[_i], p[_i], fluid, option=option)
-    return alle
 
 
 if __name__ == "__main__":

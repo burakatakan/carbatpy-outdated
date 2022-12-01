@@ -7,16 +7,13 @@ For the counterflow heat exchanger at the moment the boundary value problem
 is solved with constant overall heat transfer coefficient  along the axial 
 coordinate is implemented, together with some graphical output.
 
-Fluid properties stem from CoolProp, the low-level interface is used.
+Fluid properties stem from REFPROP or CoolProp, the low-level interface is used.
 
 Planned: 
-    -the convection coefficienets along the axial coordinate 
-    shall be evaluated using appropriate 
-    Nu-correlations
-    - optimization will be implemented (Entropy minimization)
-    - perhaps pressure drop will be implemented to the bvp
-
-
+-the convection coefficienets along the axial coordinate 
+shall be evaluated using appropriate Nu-correlations
+- optimization will be implemented (Entropy minimization)
+- perhaps pressure drop will be implemented to the bvp
 
 if nothing else given: counterflow/double-pipe
 if nothing else is said given: steady state
@@ -24,6 +21,7 @@ if nothing else is said given: steady state
 Created on Sun Oct  2 16:27:20 2022
 
 @author: atakan
+
 """
 import numpy as np
 import CoolProp.CoolProp as CP
@@ -34,6 +32,7 @@ props = "CoolProp"
 
 
 class heat_exchanger:
+    
     # Heat exchanger base class
     
     def __init__(self, fluids, mass_flows, pressures, enthalpies, UA=10, 
@@ -267,8 +266,10 @@ class counterflow_hex(heat_exchanger):
     
     def he_state(self, result, option = 0):
         """
-        Evaluation of all temperatures, enthalpies, entropies etc. 
-        along the counterflow heat exchanger and plotting T if option >1
+        After solving the bvp-Problem for the evaluation of 
+        all temperatures, enthalpies, entropies etc. 
+        along the counterflow heat exchanger 
+        and plotting T if option >1
 
         Parameters
         ----------
@@ -285,7 +286,10 @@ class counterflow_hex(heat_exchanger):
         states_1 numpy array
            resolved state variables for the outer tube.
         ds float
-            entropy production per mass of the heat exchanger (J/( kg K).
+            entropy production rate of the heat exchanger (W/(K).
+        dh2 float
+            enthalpy change rate of the second fluid in the heat 
+            exchanger (W), equal to the heat flow rate.
 
         """
         if result.success:
@@ -313,16 +317,28 @@ class counterflow_hex(heat_exchanger):
             dh2 = (states_1[2][0] - states_1[2][-1]) * self.mass_flows[1]
             
             if option >0:
-                print("Entropieproduktion:%3.2f" % (ds))
+                print("Entropy production rate:%3.2f W/K" % (ds))
             return states_0, states_1, ds, dh2
         else: 
-            print("Fehler, keine Lösung!", result.message)
+            print("Error: bvp-problem not solved succesfully!", 
+                  result.message)
             return -1, -1, -1
             
     def exergy_entering(self):
+        """
+        Calculate the exergyflow rates of both fluids entering 
+        the heat exchanger. For exergy loss calculations and efficiencies.
+
+        Returns
+        -------
+        ex : float
+           exergy flow rate in W.
+
+        """
         ex = 0
         for n in range(2):
-            ex +=hp_exergy(self.enthalpies[n],self.pressures[n], self.fluids[n], props=self.props)\
+            ex +=hp_exergy(self.enthalpies[n],self.pressures[n], 
+                           self.fluids[n], props=self.props)\
                     *self.mass_flows[n]
         return ex
                     

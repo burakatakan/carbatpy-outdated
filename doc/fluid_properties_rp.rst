@@ -1,17 +1,14 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Nov 29 14:57:14 2022
 
-@author: atakan
-"""
-Fluid Property evaluation
-=========================
+
+Fluid Property evaluation (general)
+===================================
+
+At the moment REFPROP (NIST) or CoolProp can be used for property evaluations of 
+pure fluids and mixures, TREND (RU Bochum) usage  will be included in near future. They will have to be installed on your system!
+
 
 .. automodule:: fluid_properties_rp
-    :members:
+    :members: 
     :undoc-members:
     :show-inheritance:
     
-    hp
-    sp
-    tp

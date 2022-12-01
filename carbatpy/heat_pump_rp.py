@@ -114,7 +114,7 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition =[1.0],
         areas of evaporatorand condenser (m2).
     T_s : numpy.array, 2 floats
         secondary fluid temperatures low and high in K.
-    working_fluid : coolprop-fluid
+    working_fluid : coolprop or Refprop fluid
         DESCRIPTION.
     rootfind: Boolean, optional.
         are we finding the root? (T-differences according to heat exchanger size)
@@ -135,7 +135,7 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition =[1.0],
           A_hg: heat exchanger Area until condensation
           cop: COP of the cycle
           cop_carnot: Carnot-COP for the tempereatures of condenser and
-              evaporator (superheating is neglected)
+          evaporator (superheating is neglected)
           eta_rational: ratio of the latter two COPs
           p_compr: Compressor Power (W)
           q_h_dot: Heat flow rate at high T (W).

@@ -6,6 +6,10 @@
 Welcome to carbatpy's documentation!
 ====================================
 
+Finally the module shall be able to modell Carnot Batteries in a 
+good depth. But we are at the beginning ...
+
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -13,6 +17,8 @@ Welcome to carbatpy's documentation!
    
    fluid_properties_rp
    heat_exchanger
+   mixture_search
+   heat_pump_rp
    
    
 
