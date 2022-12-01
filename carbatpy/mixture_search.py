@@ -2,7 +2,7 @@
 """
 Simple calculation of heat pump states for multinerary mixtures (using Refprop)
 mainly for visualization of temperature and enthalpy levels for different 
-pressure levels and slight superheatig after evaporation.
+pressure levels and slight superheatig after evaporation. 
 
 Created on Tue Nov 22 14:55:50 2022
 

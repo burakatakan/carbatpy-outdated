@@ -12,9 +12,10 @@ import sys
 import pathlib
 sys.path.insert(0,os.path.abspath('.'))
 sys.path.insert(0,os.path.abspath('../..'))
+sys.path.insert(0,os.path.abspath('../carbatpy'))
 
-sys.path.insert(0,os.path.abspath(r'C:\Users\atakan\sciebo\Python\carbatpy\carbatpy'))
-sys.path.insert(0,os.path.abspath(r'C:\Users\atakan\sciebo\Python\carbatpy'))
+#sys.path.insert(0,os.path.abspath(r'C:\Users\atakan\sciebo\Python\carbatpy\carbatpy'))
+#sys.path.insert(0,os.path.abspath(r'C:\Users\atakan\sciebo\Python\carbatpy'))
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 project = 'carbatpy'
 copyright = '2022, B. Atakan'
@@ -42,4 +43,4 @@ html_theme = 'nature'  # 'alabaster' 'classic'
 #     "rightsidebar": "true",
 #     "relbarbgcolor": "black"
 #     }
-html_static_path = ['_static']
+#html_static_path = ['_static']
