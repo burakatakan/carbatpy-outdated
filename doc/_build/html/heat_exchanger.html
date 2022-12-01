@@ -47,15 +47,15 @@
             
   <section id="module-heat_exchanger">
 <span id="heat-exchanger-evaluation"></span><h1>Heat Exchanger evaluation<a class="headerlink" href="#module-heat_exchanger" title="Permalink to this heading">¶</a></h1>
-<span class="target" id="module-0"></span><p>Heat exchanger base class
+<p>Heat exchanger base class
 and counterflow heat exchnager class are introduced
 For the first, only the maximum possible heat flow rate s evaluated.
 For the counterflow heat exchanger at the moment the boundary value problem
 is solved with constant overall heat transfer coefficient  along the axial
 coordinate is implemented, together with some graphical output.</p>
 <p>Fluid properties stem from REFPROP or CoolProp, the low-level interface is used.</p>
-<p>Planned:
--the convection coefficienets along the axial coordinate
+<p>Planned</p>
+<p>-the convection coefficienets along the axial coordinate
 shall be evaluated using appropriate Nu-correlations
 - optimization will be implemented (Entropy minimization)
 - perhaps pressure drop will be implemented to the bvp</p>
@@ -66,8 +66,7 @@ if nothing else is said given: steady state</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="heat_exchanger.counterflow_hex">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">heat_exchanger.</span></span><span class="sig-name descname"><span class="pre">counterflow_hex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass_flows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pressures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enthalpies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">U</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_tubes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'const'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'HEX_0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compositions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[[1.0],</span> <span class="pre">[1.0]]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.counterflow_hex" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#heat_exchanger.heat_exchanger" title="heat_exchanger.heat_exchanger"><code class="xref py py-class docutils literal notranslate"><span class="pre">heat_exchanger</span></code></a></p>
-<dl class="py method">
+<dd><dl class="py method">
 <dt class="sig sig-object py" id="heat_exchanger.counterflow_hex.bc">
 <span class="sig-name descname"><span class="pre">bc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hb</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.counterflow_hex.bc" title="Permalink to this definition">¶</a></dt>
 <dd><p>two boundary conditions for bvp-solver (scipy-optimize) needed
@@ -179,8 +178,7 @@ exchanger (W), equal to the heat flow rate.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="heat_exchanger.heat_exchanger">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">heat_exchanger.</span></span><span class="sig-name descname"><span class="pre">heat_exchanger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass_flows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pressures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enthalpies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">UA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'const'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'HEX_0'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.heat_exchanger" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="py method">
+<dd><dl class="py method">
 <dt class="sig sig-object py" id="heat_exchanger.heat_exchanger.q_max">
 <span class="sig-name descname"><span class="pre">q_max</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.heat_exchanger.q_max" title="Permalink to this definition">¶</a></dt>
 <dd><p>maximum possible heat transfer for an isobaric, adiabatic

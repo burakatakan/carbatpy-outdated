@@ -9,7 +9,9 @@ coordinate is implemented, together with some graphical output.
 
 Fluid properties stem from REFPROP or CoolProp, the low-level interface is used.
 
-Planned: 
+Planned
+
+
 -the convection coefficienets along the axial coordinate 
 shall be evaluated using appropriate Nu-correlations
 - optimization will be implemented (Entropy minimization)
