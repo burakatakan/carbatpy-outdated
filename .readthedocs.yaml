@@ -5,6 +5,7 @@
 # Required
 version: 2
 
+formats: all
 # Set the version of Python and other tools you might need
 build:
   os: "ubuntu-22.04"
@@ -26,8 +27,7 @@ sphinx:
 
 # Optionally declare the Python requirements required to build your docs
 python:
-   install:
-   - requirements: doc/requirements.txt
+   system_packages: true  
 
 
   
