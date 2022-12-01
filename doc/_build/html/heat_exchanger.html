@@ -67,29 +67,6 @@ if nothing else is said given: steady state</p>
 <dt class="sig sig-object py" id="heat_exchanger.counterflow_hex">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">heat_exchanger.</span></span><span class="sig-name descname"><span class="pre">counterflow_hex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass_flows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pressures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enthalpies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">U</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_tubes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'const'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'HEX_0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compositions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[[1.0],</span> <span class="pre">[1.0]]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.counterflow_hex" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#heat_exchanger.heat_exchanger" title="heat_exchanger.heat_exchanger"><code class="xref py py-class docutils literal notranslate"><span class="pre">heat_exchanger</span></code></a></p>
-<p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#heat_exchanger.counterflow_hex.bc" title="heat_exchanger.counterflow_hex.bc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bc</span></code></a>(ha, hb)</p></td>
-<td><p>two boundary conditions for bvp-solver (scipy-optimize) needed here: the enthalpies of the inner fluid at x=0 and the enthalpy of the outer fluid at the end of the heat exchanger at x=length</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#heat_exchanger.counterflow_hex.energy" title="heat_exchanger.counterflow_hex.energy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">energy</span></code></a>(x, h)</p></td>
-<td><p>energy balance for solving the boundary value problem couples the energy changes of each fluid with the convective heat transfer between both fluids.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#heat_exchanger.counterflow_hex.exergy_entering" title="heat_exchanger.counterflow_hex.exergy_entering"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exergy_entering</span></code></a>()</p></td>
-<td><p>Calculate the exergyflow rates of both fluids entering the heat exchanger.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#heat_exchanger.counterflow_hex.he_bvp_solve" title="heat_exchanger.counterflow_hex.he_bvp_solve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">he_bvp_solve</span></code></a>()</p></td>
-<td><p>solving the boundary volume problem (scipy) for the counter-flow heat exchanger</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#heat_exchanger.counterflow_hex.he_state" title="heat_exchanger.counterflow_hex.he_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">he_state</span></code></a>(result[, option])</p></td>
-<td><p>After solving the bvp-Problem for the evaluation of all temperatures, enthalpies, entropies etc.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">q_max</span></code>([option])</p></td>
-<td><p>maximum possible heat transfer for an isobaric, adiabatic heat exchanger</p></td>
-</tr>
-</tbody>
-</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="heat_exchanger.counterflow_hex.bc">
 <span class="sig-name descname"><span class="pre">bc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hb</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.counterflow_hex.bc" title="Permalink to this definition">¶</a></dt>
@@ -203,14 +180,6 @@ exchanger (W), equal to the heat flow rate.</p></li>
 <dt class="sig sig-object py" id="heat_exchanger.heat_exchanger">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">heat_exchanger.</span></span><span class="sig-name descname"><span class="pre">heat_exchanger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass_flows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pressures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enthalpies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">UA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'const'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'HEX_0'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.heat_exchanger" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#heat_exchanger.heat_exchanger.q_max" title="heat_exchanger.heat_exchanger.q_max"><code class="xref py py-obj docutils literal notranslate"><span class="pre">q_max</span></code></a>([option])</p></td>
-<td><p>maximum possible heat transfer for an isobaric, adiabatic heat exchanger</p></td>
-</tr>
-</tbody>
-</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="heat_exchanger.heat_exchanger.q_max">
 <span class="sig-name descname"><span class="pre">q_max</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.heat_exchanger.q_max" title="Permalink to this definition">¶</a></dt>
