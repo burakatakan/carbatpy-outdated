@@ -6,8 +6,8 @@ Mainly used for thermodynamic cycle calculations.
 So far for several combinations of (input) parameters in the single-phase or 
 saturated regime. For the ouput it can be mostly chosen, whether transport 
 properties are als returned, besides the thermodynamiic properties. 
-Functions are also vectorized by hand (Name:"..._v). Physical exergies can be calculated for a state of known h and p.
-
+Functions are also vectorized by hand (Name:"..._v). Physical exergies 
+can be calculated for a state of known h and p.
 Standard units: SI (J, kg, Pa, K,...)
 
 changes 30.11.2022
@@ -229,7 +229,10 @@ name_properties = [
 
 
 def hp_v(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
-    """ Vectorization of the single phase properties function, see: hp"""
+    """ 
+    Vectorization of the single phase properties function, see: hp
+    
+    """
     _n = len(h)
     if option == 1:
         alle = np.zeros((6, _n))
