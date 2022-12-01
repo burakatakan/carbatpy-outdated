@@ -26,9 +26,13 @@ from time import time
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
 _props = "REFPROP"  # or "CoolProp"
 if _props == "REFPROP":
-    RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
-    # be careful pressure is in Pa!
-    _units = RP.GETENUMdll(0, "MASS BASE SI").iEnum
+    try:
+        RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
+        # be careful pressure is in Pa!
+        _units = RP.GETENUMdll(0, "MASS BASE SI").iEnum
+    except:
+        print("print refprop not installed!")
+        
 else:
     _units = 21
 
