@@ -1,6 +1,1 @@
-ctREFPROP
-matplotlib
-numpy
-scipy
-pandas
-CoolProp
+furo==2021.11.16
