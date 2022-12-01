@@ -1,0 +1,308 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Heat Exchanger evaluation &#8212; carbatpy 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Mixture search, Simple heat-pump (plotting)" href="mixture_search.html" />
+    <link rel="prev" title="Fluid Property evaluation (general)" href="fluid_properties_rp.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mixture_search.html" title="Mixture search, Simple heat-pump (plotting)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="fluid_properties_rp.html" title="Fluid Property evaluation (general)"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">carbatpy 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Heat Exchanger evaluation</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-heat_exchanger">
+<span id="heat-exchanger-evaluation"></span><h1>Heat Exchanger evaluation<a class="headerlink" href="#module-heat_exchanger" title="Permalink to this heading">¶</a></h1>
+<span class="target" id="module-0"></span><p>Heat exchanger base class
+and counterflow heat exchnager class are introduced
+For the first, only the maximum possible heat flow rate s evaluated.
+For the counterflow heat exchanger at the moment the boundary value problem
+is solved with constant overall heat transfer coefficient  along the axial
+coordinate is implemented, together with some graphical output.</p>
+<p>Fluid properties stem from REFPROP or CoolProp, the low-level interface is used.</p>
+<p>Planned:
+-the convection coefficienets along the axial coordinate
+shall be evaluated using appropriate Nu-correlations
+- optimization will be implemented (Entropy minimization)
+- perhaps pressure drop will be implemented to the bvp</p>
+<p>if nothing else given: counterflow/double-pipe
+if nothing else is said given: steady state</p>
+<p>Created on Sun Oct  2 16:27:20 2022</p>
+<p>&#64;author: atakan</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="heat_exchanger.counterflow_hex">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">heat_exchanger.</span></span><span class="sig-name descname"><span class="pre">counterflow_hex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass_flows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pressures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enthalpies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">U</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_tubes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">no_points</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'const'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'HEX_0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compositions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[[1.0],</span> <span class="pre">[1.0]]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.counterflow_hex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#heat_exchanger.heat_exchanger" title="heat_exchanger.heat_exchanger"><code class="xref py py-class docutils literal notranslate"><span class="pre">heat_exchanger</span></code></a></p>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#heat_exchanger.counterflow_hex.bc" title="heat_exchanger.counterflow_hex.bc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bc</span></code></a>(ha, hb)</p></td>
+<td><p>two boundary conditions for bvp-solver (scipy-optimize) needed here: the enthalpies of the inner fluid at x=0 and the enthalpy of the outer fluid at the end of the heat exchanger at x=length</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#heat_exchanger.counterflow_hex.energy" title="heat_exchanger.counterflow_hex.energy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">energy</span></code></a>(x, h)</p></td>
+<td><p>energy balance for solving the boundary value problem couples the energy changes of each fluid with the convective heat transfer between both fluids.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#heat_exchanger.counterflow_hex.exergy_entering" title="heat_exchanger.counterflow_hex.exergy_entering"><code class="xref py py-obj docutils literal notranslate"><span class="pre">exergy_entering</span></code></a>()</p></td>
+<td><p>Calculate the exergyflow rates of both fluids entering the heat exchanger.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#heat_exchanger.counterflow_hex.he_bvp_solve" title="heat_exchanger.counterflow_hex.he_bvp_solve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">he_bvp_solve</span></code></a>()</p></td>
+<td><p>solving the boundary volume problem (scipy) for the counter-flow heat exchanger</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#heat_exchanger.counterflow_hex.he_state" title="heat_exchanger.counterflow_hex.he_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">he_state</span></code></a>(result[, option])</p></td>
+<td><p>After solving the bvp-Problem for the evaluation of all temperatures, enthalpies, entropies etc.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">q_max</span></code>([option])</p></td>
+<td><p>maximum possible heat transfer for an isobaric, adiabatic heat exchanger</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="heat_exchanger.counterflow_hex.bc">
+<span class="sig-name descname"><span class="pre">bc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hb</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.counterflow_hex.bc" title="Permalink to this definition">¶</a></dt>
+<dd><p>two boundary conditions for bvp-solver (scipy-optimize) needed
+here: the enthalpies of the inner fluid at x=0 and the enthalpy of
+the outer fluid at the end of the heat exchanger at x=length</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ha</strong> (<em>numpy array</em>) – enthalpies of the inner fluid along the x-coordinate.</p></li>
+<li><p><strong>hb</strong> (<em>numpy array</em>) – enthalpies of the outer fluid along the x-coordinate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the difference to the prescribed entrance conditions, should both
+get zero, if succesful.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array of length 2</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="heat_exchanger.counterflow_hex.energy">
+<span class="sig-name descname"><span class="pre">energy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.counterflow_hex.energy" title="Permalink to this definition">¶</a></dt>
+<dd><p>energy balance for solving the boundary value problem
+couples the energy changes of each fluid with the convective heat
+transfer between both fluids.
+At the moment the convection coefficient from the heat exchanger
+is used;
+this shall be evaluated later as a function of local
+heat exchanger parameters.</p>
+<p>output: both changes in enthalpy in x-direction</p>
+<dl class="simple">
+<dt>depends on heat-exchanger variables:</dt><dd><p>fluids (fluid-names)
+U: heat transfer coefficient W/m2/K
+mass_flows: mass flow rates kg/s
+perimeter: circumference of tube m</p>
+</dd>
+</dl>
+<p>function hp returns an array, the first value is temperature</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="heat_exchanger.counterflow_hex.exergy_entering">
+<span class="sig-name descname"><span class="pre">exergy_entering</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.counterflow_hex.exergy_entering" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the exergyflow rates of both fluids entering
+the heat exchanger. For exergy loss calculations and efficiencies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ex</strong> – exergy flow rate in W.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="heat_exchanger.counterflow_hex.he_bvp_solve">
+<span class="sig-name descname"><span class="pre">he_bvp_solve</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.counterflow_hex.he_bvp_solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>solving the boundary volume problem (scipy) for the counter-flow
+heat exchanger</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><p><strong>result</strong> –</p>
+<dl class="simple">
+<dt>see scipy documentation, e.g. success (did it find a solution,</dt><dd><p>the x and y values)</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="heat_exchanger.counterflow_hex.he_state">
+<span class="sig-name descname"><span class="pre">he_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.counterflow_hex.he_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>After solving the bvp-Problem for the evaluation of
+all temperatures, enthalpies, entropies etc.
+along the counterflow heat exchanger
+and plotting T if option &gt;1</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>result</strong> (<em>TYPE</em>) – DESCRIPTION.</p></li>
+<li><p><strong>option</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – DESCRIPTION. The default is 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>if success == True</em></p></li>
+<li><p><em>states_0 numpy array</em> – resolved state variables for the inner tube(s).</p></li>
+<li><p><em>states_1 numpy array</em> – resolved state variables for the outer tube.</p></li>
+<li><p><em>ds float</em> – entropy production rate of the heat exchanger (W/(K).</p></li>
+<li><p><em>dh2 float</em> – enthalpy change rate of the second fluid in the heat
+exchanger (W), equal to the heat flow rate.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="heat_exchanger.heat_exchanger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">heat_exchanger.</span></span><span class="sig-name descname"><span class="pre">heat_exchanger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass_flows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pressures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enthalpies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">UA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'const'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'HEX_0'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.heat_exchanger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#heat_exchanger.heat_exchanger.q_max" title="heat_exchanger.heat_exchanger.q_max"><code class="xref py py-obj docutils literal notranslate"><span class="pre">q_max</span></code></a>([option])</p></td>
+<td><p>maximum possible heat transfer for an isobaric, adiabatic heat exchanger</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="heat_exchanger.heat_exchanger.q_max">
+<span class="sig-name descname"><span class="pre">q_max</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_exchanger.heat_exchanger.q_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>maximum possible heat transfer for an isobaric, adiabatic
+heat exchanger</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Heat Exchanger evaluation</a><ul>
+<li><a class="reference internal" href="#heat_exchanger.counterflow_hex"><code class="docutils literal notranslate"><span class="pre">counterflow_hex</span></code></a><ul>
+<li><a class="reference internal" href="#heat_exchanger.counterflow_hex.bc"><code class="docutils literal notranslate"><span class="pre">counterflow_hex.bc()</span></code></a></li>
+<li><a class="reference internal" href="#heat_exchanger.counterflow_hex.energy"><code class="docutils literal notranslate"><span class="pre">counterflow_hex.energy()</span></code></a></li>
+<li><a class="reference internal" href="#heat_exchanger.counterflow_hex.exergy_entering"><code class="docutils literal notranslate"><span class="pre">counterflow_hex.exergy_entering()</span></code></a></li>
+<li><a class="reference internal" href="#heat_exchanger.counterflow_hex.he_bvp_solve"><code class="docutils literal notranslate"><span class="pre">counterflow_hex.he_bvp_solve()</span></code></a></li>
+<li><a class="reference internal" href="#heat_exchanger.counterflow_hex.he_state"><code class="docutils literal notranslate"><span class="pre">counterflow_hex.he_state()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#heat_exchanger.heat_exchanger"><code class="docutils literal notranslate"><span class="pre">heat_exchanger</span></code></a><ul>
+<li><a class="reference internal" href="#heat_exchanger.heat_exchanger.q_max"><code class="docutils literal notranslate"><span class="pre">heat_exchanger.q_max()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="fluid_properties_rp.html"
+                          title="previous chapter">Fluid Property evaluation (general)</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="mixture_search.html"
+                          title="next chapter">Mixture search, Simple heat-pump (plotting)</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/heat_exchanger.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mixture_search.html" title="Mixture search, Simple heat-pump (plotting)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="fluid_properties_rp.html" title="Fluid Property evaluation (general)"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">carbatpy 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Heat Exchanger evaluation</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, B. Atakan.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+  </body>
+</html>

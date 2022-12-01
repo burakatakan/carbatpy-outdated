@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Heat Pump Cycle &#8212; carbatpy 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Mixture search, Simple heat-pump (plotting)" href="mixture_search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mixture_search.html" title="Mixture search, Simple heat-pump (plotting)"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">carbatpy 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Heat Pump Cycle</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-heat_pump_rp">
+<span id="heat-pump-cycle"></span><h1>Heat Pump Cycle<a class="headerlink" href="#module-heat_pump_rp" title="Permalink to this heading">¶</a></h1>
+<p>Heat pump cycle incl. heat transfer.</p>
+<p>Calculate the pressures and the mass flow rate to fulfill the heat transfer
+canditions for given (constant!) temperatures of the heat sink and source
+x=1 before the compressor with isentropic efficienc eta and x=0 entering
+the throttle.
+This is done by root finding for a fluid, taking the properties from CoolProp
+Will be used for sensitivity analysis and optimization (hopefully).</p>
+<p>Created on Tue Feb 23 17:15:50 2021</p>
+<p>&#64;author: atakan</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="heat_pump_rp.check_bound">
+<span class="sig-prename descclassname"><span class="pre">heat_pump_rp.</span></span><span class="sig-name descname"><span class="pre">check_bound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_pump_rp.check_bound" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="heat_pump_rp.heat_pump_ht">
+<span class="sig-prename descclassname"><span class="pre">heat_pump_rp.</span></span><span class="sig-name descname"><span class="pre">heat_pump_ht</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">U</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">working_fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rootfind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_pump_rp.heat_pump_ht" title="Permalink to this definition">¶</a></dt>
+<dd><p>Heat pump cycle with isothermal source and sink, x=0 after condenser.</p>
+<p>x=1 entering the compressor. For optimizing the two working fluid pressures
+or calculating states, COPs etc</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> (<em>numpy.array</em><em>, </em><em>3 floats</em>) – with the pressures of evaporator and condenser and  the
+mass flow rate (all SI Pa, kg/s.</p></li>
+<li><p><strong>eta</strong> (<em>float</em>) – compressor efficienvy (isentropic).</p></li>
+<li><p><strong>U</strong> (<em>numpy.array</em><em>, </em><em>3floats</em>) – mean overall heat ransfer coefficients for evaporator, condenser(gas)
+condenser two-phase (W/m2/K).</p></li>
+<li><p><strong>A</strong> (<em>numpy.array</em><em>, </em><em>2 floats</em>) – areas of evaporatorand condenser (m2).</p></li>
+<li><p><strong>T_s</strong> (<em>numpy.array</em><em>, </em><em>2 floats</em>) – secondary fluid temperatures low and high in K.</p></li>
+<li><p><strong>working_fluid</strong> (<em>coolprop</em><em> or </em><em>Refprop fluid</em>) – DESCRIPTION.</p></li>
+<li><p><strong>rootfind</strong> (<em>Boolean</em><em>, </em><em>optional.</em>) – are we finding the root? (T-differences according to heat exchanger size)</p></li>
+<li><p><strong>optim</strong> (<em>Boolean</em><em>, </em><em>optional</em>) – if true: output for optimization
+if false: output of several properties. The default is True.</p></li>
+<li><p><strong>bounds</strong> (<em>not yet implemented</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>if rootfind == True</em> – array with three differences of energy balances</p></li>
+<li><p><em>if optim == True</em> – rational efficiency (for optimization)</p></li>
+<li><p><em>if False</em> – state: array with all calculated states (T,p,x,h,s,rho …)
+q_w: all specific energies transfered (J/kg)
+A_hg: heat exchanger Area until condensation
+cop: COP of the cycle
+cop_carnot: Carnot-COP for the tempereatures of condenser and
+evaporator (superheating is neglected)
+eta_rational: ratio of the latter two COPs
+p_compr: Compressor Power (W)
+q_h_dot: Heat flow rate at high T (W).</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="heat_pump_rp.heat_pump_opti">
+<span class="sig-prename descclassname"><span class="pre">heat_pump_rp.</span></span><span class="sig-name descname"><span class="pre">heat_pump_opti</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">para</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">U</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">working_fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#heat_pump_rp.heat_pump_opti" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Heat Pump Cycle</a><ul>
+<li><a class="reference internal" href="#heat_pump_rp.check_bound"><code class="docutils literal notranslate"><span class="pre">check_bound()</span></code></a></li>
+<li><a class="reference internal" href="#heat_pump_rp.heat_pump_ht"><code class="docutils literal notranslate"><span class="pre">heat_pump_ht()</span></code></a></li>
+<li><a class="reference internal" href="#heat_pump_rp.heat_pump_opti"><code class="docutils literal notranslate"><span class="pre">heat_pump_opti()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="mixture_search.html"
+                          title="previous chapter">Mixture search, Simple heat-pump (plotting)</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/heat_pump_rp.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mixture_search.html" title="Mixture search, Simple heat-pump (plotting)"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">carbatpy 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Heat Pump Cycle</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, B. Atakan.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+  </body>
+</html>

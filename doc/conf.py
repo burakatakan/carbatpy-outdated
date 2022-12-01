@@ -27,6 +27,7 @@ release = '0.1'
 extensions = ['sphinx.ext.napoleon', 
               'numpydoc',
               'sphinx.ext.doctest',
+              'sphinx.ext.githubpages',
               'sphinx.ext.duration']
 
 templates_path = ['_templates']

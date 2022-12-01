@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Mixture search, Simple heat-pump (plotting) &#8212; carbatpy 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Heat Pump Cycle" href="heat_pump_rp.html" />
+    <link rel="prev" title="Heat Exchanger evaluation" href="heat_exchanger.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="heat_pump_rp.html" title="Heat Pump Cycle"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="heat_exchanger.html" title="Heat Exchanger evaluation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">carbatpy 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Mixture search, Simple heat-pump (plotting)</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-mixture_search">
+<span id="mixture-search-simple-heat-pump-plotting"></span><h1>Mixture search, Simple heat-pump (plotting)<a class="headerlink" href="#module-mixture_search" title="Permalink to this heading">¶</a></h1>
+<p>Simple calculation of heat pump states for multinerary mixtures (using Refprop)
+mainly for visualization of temperature and enthalpy levels for different
+pressure levels and slight superheatig after evaporation.</p>
+<p>Created on Tue Nov 22 14:55:50 2022</p>
+<p>&#64;author: atakan</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="mixture_search.find_comp">
+<span class="sig-prename descclassname"><span class="pre">mixture_search.</span></span><span class="sig-name descname"><span class="pre">find_comp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">110000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">289.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mixture_search.find_comp" title="Permalink to this definition">¶</a></dt>
+<dd><p>find the ternary composition for given compressor inlet T &amp; p
+function for scipy.root</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em><em> (</em><em>0&lt;x&lt;1</em><em>)</em>) – mole fraction to vary, the second one in the list.</p></li>
+<li><p><strong>x0</strong> (<em>float</em><em> (</em><em>0&lt;x&lt;1</em><em>)</em>) – fixed mole fraction , the first one in the list.</p></li>
+<li><p><strong>p</strong> (<em>float</em><em>, </em><em>optional</em>) – inlet pressure in Pa. The default is 1.1e5.</p></li>
+<li><p><strong>T</strong> (<em>float</em><em>, </em><em>optional</em>) – inlet pressure in K. The default is 289..</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>difference between wanted T and T of the mixture at p.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mixture_search.hp_calc">
+<span class="sig-prename descclassname"><span class="pre">mixture_search.</span></span><span class="sig-name descname"><span class="pre">hp_calc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pev</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pcond</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dT_cin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Propane</span> <span class="pre">*</span> <span class="pre">Pentane</span> <span class="pre">*</span> <span class="pre">Heptane'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.65</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mixture_search.hp_calc" title="Permalink to this definition">¶</a></dt>
+<dd><p>simple heat pump calculation (also for plotting the state changes)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pev</strong> (<em>float</em>) – evaporator pressure in Pa.</p></li>
+<li><p><strong>pcond</strong> (<em>float</em>) – condenser pressure in Pa.</p></li>
+<li><p><strong>comp</strong> (<em>list</em><em> of </em><em>floats</em><em>, </em><em>optional</em>) – molar composition, must sum to 1. The default is [1.0].</p></li>
+<li><p><strong>dT_cin</strong> (<em>float</em><em>, </em><em>optional</em>) – superheating at compresor entrance. The default is 10.</p></li>
+<li><p><strong>fluid_s</strong> (<em>depends on property module</em><em>(</em><em>REFPROP/CoolProp</em><em>)</em><em>, </em><em>optional</em>) – working fluid compounds (list). The default is fluid_s.</p></li>
+<li><p><strong>eta_s</strong> (<em>float</em><em>, </em><em>optional</em>) – isentropic efficiency compressor. The default is 0.65.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>states along the cyle, for each T,p,h,v,s,q.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array (npo+5, 6)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Mixture search, Simple heat-pump (plotting)</a><ul>
+<li><a class="reference internal" href="#mixture_search.find_comp"><code class="docutils literal notranslate"><span class="pre">find_comp()</span></code></a></li>
+<li><a class="reference internal" href="#mixture_search.hp_calc"><code class="docutils literal notranslate"><span class="pre">hp_calc()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="heat_exchanger.html"
+                          title="previous chapter">Heat Exchanger evaluation</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="heat_pump_rp.html"
+                          title="next chapter">Heat Pump Cycle</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/mixture_search.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="heat_pump_rp.html" title="Heat Pump Cycle"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="heat_exchanger.html" title="Heat Exchanger evaluation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">carbatpy 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Mixture search, Simple heat-pump (plotting)</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, B. Atakan.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+  </body>
+</html>

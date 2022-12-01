@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Fluid Property evaluation (general)</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/epub.css" /> 
+  </head><body>
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <section id="fluid-property-evaluation-general">
+<h1>Fluid Property evaluation (general)</h1>
+<p>At the moment REFPROP (NIST) or CoolProp can be used for property evaluations of
+pure fluids and mixures, TREND (RU Bochum) usage  will be included in near future. They will have to be installed on your system!</p>
+<span class="target" id="module-fluid_properties_rp"></span><p>Functions to obtain fluid properties from REFPROP or CoolProp using the low
+level interface. (Set _props accordingly)
+Mainly used for thermodynamic cycle calculations.
+So far for several combinations of (input) parameters in the single-phase or
+saturated regime. For the ouput it can be mostly chosen, whether transport
+properties are als returned, besides the thermodynamiic properties.
+Functions are also vectorized by hand (Name:”…_v). Physical exergies can be calculated for a state of known h and p.</p>
+<p>Standard units: SI (J, kg, Pa, K,…)</p>
+<p>changes 30.11.2022</p>
+<p>&#64;author: atakan</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="fluid_properties_rp.T_prop_sat">
+<span class="sig-prename descclassname"><span class="pre">fluid_properties_rp.</span></span><span class="sig-name descname"><span class="pre">T_prop_sat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Saturation state properties at given temperature for a certain fluid (mixture).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>temp</strong> (<em>float</em>) – Temperature in K.</p></li>
+<li><p><strong>fluid</strong> (<em>an AbstractState in coolprop</em><em> or </em><em>a fluid in REFPROP.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>alle</strong> –</p>
+<dl class="simple">
+<dt>includes:  properies in saturated state at given pressure p</dt><dd><p>of liquid (0,:) and vapor(1,:),</p>
+</dd>
+</dl>
+<p>1: T, p, h, v,s, q
+0:  T p h v s q cp, viscosity, thermal conductivity, Pr, kinematic viscosity
+all in SI units.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array (2,4)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fluid_properties_rp.hp">
+<span class="sig-prename descclassname"><span class="pre">fluid_properties_rp.</span></span><span class="sig-name descname"><span class="pre">hp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Properties needed for integration at given  values of pressure
+and specific enthalpy, single phase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>h</strong> (<em>float</em>) – specific enthalpy in J/kg.</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – pressure in Pa.</p></li>
+<li><p><strong>fluid</strong> (<em>an AbstractState in coolprop.</em><em> or </em><em>fluid name in Refprop</em>) – </p></li>
+<li><p><strong>option</strong> (<em>integer</em>) – if 0 also transport properties will be calculated
+(not yet implemented for REFPROP)
+with option 1 : T,p,h,v,s,x is calculated</p></li>
+<li><p><strong>units</strong> (<em>integer</em>) – units in Refprop (imposrtant: must be SI and mass based (kg, Pa etc.))</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>alle</strong> – if option = 0 it includes: T, p , quality, specific enthalpy,entropy
+densities,
+viscosities, cp , conductivity,phase prandtl-number
+at the defined state (p,h)
+all in SI units.</p>
+<p>if option =1: it is compatible to the high level output
+T,p,h,v,s,x.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fluid_properties_rp.hp_exergy">
+<span class="sig-prename descclassname"><span class="pre">fluid_properties_rp.</span></span><span class="sig-name descname"><span class="pre">hp_exergy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_env</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">283.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_env</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">101300.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>calculate the specific exergy of a fluid from given enthalpy and pressure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>h</strong> (<em>float</em>) – specific enthalpy (J/kg).</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – pressure (Pa).</p></li>
+<li><p><strong>fluid</strong> (<em>depends on model</em><em>, </em><em>as defined with props</em><em>(</em><em>REFPROP</em><em>, </em><em>CoolProp etc.</em><em>)</em>) – define the fluid(mixture).</p></li>
+<li><p><strong>T_env</strong> (<em>float</em><em>, </em><em>optional</em>) – temperature (K) of the environment. The default is __Tenv__.</p></li>
+<li><p><strong>p_env</strong> (<em>float</em><em>, </em><em>optional</em>) – pressure (Pa) of the environment. The default is __penv__.</p></li>
+<li><p><strong>props</strong> (<em>TYPE</em><em>, </em><em>optional</em>) – define the fluid module to use. The default is _props.</p></li>
+<li><p><strong>composition</strong> (<em>depends on model</em><em>, </em><em>optional</em>) – mole fractions of the different compounds, should add to 1.
+The default is [1.0].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ex</strong> – specific exergy (J/kg).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fluid_properties_rp.hp_v">
+<span class="sig-prename descclassname"><span class="pre">fluid_properties_rp.</span></span><span class="sig-name descname"><span class="pre">hp_v</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Vectorization of the single phase properties function, see: hp</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fluid_properties_rp.mdot_area_function">
+<span class="sig-prename descclassname"><span class="pre">fluid_properties_rp.</span></span><span class="sig-name descname"><span class="pre">mdot_area_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m_dot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diameter</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Calculate the mass flux through a tube and the orthogonal area</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m_dot</strong> (<em>float</em>) – mass flow rate (kg/s).</p></li>
+<li><p><strong>diameter</strong> (<em>float</em>) – of the tube (m).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>m_dot_area</strong> (<em>float</em>) – in kg/(s m2).</p></li>
+<li><p><strong>area</strong> (<em>float</em>) – in m2.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fluid_properties_rp.p_prop_sat">
+<span class="sig-prename descclassname"><span class="pre">fluid_properties_rp.</span></span><span class="sig-name descname"><span class="pre">p_prop_sat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Saturation state properties at given p for a certain fluid (mixture).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> (<em>float</em>) – saturation pressure in Pa.</p></li>
+<li><p><strong>fluid</strong> (<em>an AbstractState in coolprop</em><em> or </em><em>a fluid in REFPROP.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>alle</strong> –</p>
+<dl class="simple">
+<dt>includes:  properies in saturated state at given pressure p</dt><dd><p>of  vapor(0,:),and liquid (1,:)</p>
+</dd>
+</dl>
+<p>1: T, p, h, v,s, q
+0:  T p h v s q cp, viscosity, thermal conductivity, Pr, kinematic viscosity
+all in SI units.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array (2,4)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fluid_properties_rp.prop_pq">
+<span class="sig-prename descclassname"><span class="pre">fluid_properties_rp.</span></span><span class="sig-name descname"><span class="pre">prop_pq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Saturation state properties at given pressure  and quality for a certain
+fluid (mixture).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> (<em>float</em>) – pressure in Pa.</p></li>
+<li><p><strong>q</strong> (<em>float</em><em> (</em><em>0&lt;q&lt;1</em><em>)</em>) – quality</p></li>
+<li><p><strong>fluid</strong> (<em>an AbstractState in coolprop</em><em> or </em><em>a fluid in REFPROP.</em>) – </p></li>
+<li><p><strong>composition</strong> (<em>list</em><em> of </em><em>floats</em>) – mole fraction of each fluid.</p></li>
+<li><p><strong>option</strong> (<em>integer</em>) – 1: only T p h v s and q</p></li>
+<li><p><strong>units</strong> (<em>integer</em>) – select units (SI of property model, for REFPROP: 21)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>alle</strong> –</p>
+<dl class="simple">
+<dt>includes:  properies in saturated state at given pressure p</dt><dd><p>of liquid (0,:) and vapor(1,:),</p>
+</dd>
+</dl>
+<p>T, p, h, v,s, q</p>
+<p>all in SI units.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array (2,4)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fluid_properties_rp.sp">
+<span class="sig-prename descclassname"><span class="pre">fluid_properties_rp.</span></span><span class="sig-name descname"><span class="pre">sp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Properties needed for integration at given s and p, single phase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>s</strong> (<em>float</em>) – specific entropy in J/kg.</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – pressure in Pa.</p></li>
+<li><p><strong>fluid</strong> (<em>an AbstractState in coolprop.</em><em> or </em><em>fluid name in Refprop</em>) – </p></li>
+<li><p><strong>option</strong> (<em>integer</em>) – if 0 also transport properties will be calculated
+(not yet implemented for REFPROP)
+with option 1 : T,p,h,v,s,x is calculated</p></li>
+<li><p><strong>units</strong> (<em>integer</em>) – units in Refprop (imposrtant: must be SI and mass based (kg, Pa etc.))</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>alle</strong> – if option = 0 it includes: T, p , quality, specific enthalpy,entropy
+densities,
+viscosities, cp , conductivity,phase prandtl-number
+at the defined state (p,h)
+all in SI units.</p>
+<p>if option =1: it is compatible to the high level output
+T,p,h,v,s,x.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fluid_properties_rp.tp">
+<span class="sig-prename descclassname"><span class="pre">fluid_properties_rp.</span></span><span class="sig-name descname"><span class="pre">tp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">21</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Properties needed for integration at given temperature and pressure,
+single phase.
+option 0 (many properties) not yet implemented for REFPROP!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>temp</strong> (<em>float</em>) – temperature in K.</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – pressure in Pa.</p></li>
+<li><p><strong>fluid</strong> (<em>an AbstractState in coolprop.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>alle</strong> – if option = 0 it includes: T, p , quality, specific enthalpy,entropy
+densities,
+viscosities, cp , conductivity,phase prandtl-number
+at the defined state (p,h)
+all in SI units.</p>
+<p>if option =1: it is compatible to the high level output
+T,p,h,v,s,x.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  </body>
+</html>
