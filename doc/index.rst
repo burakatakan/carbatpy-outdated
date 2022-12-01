@@ -11,12 +11,12 @@ good depth. But we are at the beginning ...
 
 .. toctree::
    :maxdepth: 4
-   :caption: Contents:
-   
-   fluid_properties_rp
+   :caption: Contents: 
+        
    heat_exchanger
    mixture_search
    heat_pump_rp
+   fluid_properties_rp 
 
 Indices and tables
 ==================

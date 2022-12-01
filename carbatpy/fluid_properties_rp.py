@@ -116,7 +116,6 @@ def hp(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
         specific enthalpy in J/kg.
     p : float
         pressure in Pa.
-
     fluid :   an AbstractState in coolprop. or fluid name in Refprop
     option: integer
         if 0 also transport properties will be calculated 
@@ -356,20 +355,24 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
                 alle = [temp, p,  h, 1/rho, s,  x]
 
         vap_liq.append(np.array(alle))
+        
     return np.array(vap_liq)
 
 
 def T_prop_sat(temp,  fluid, composition=[1.0], option=1, units=_units,
-               props=_props):  # HIER geht's weiter
+               props=_props):
+    
     """
-    Saturation state properties at given temperature for a certain fluid (mixture).
+    Saturation state properties at given temperature for a certain fluid 
+    (mixture).t
 
     Parameters
     ----------
-    temp: float
+    temp : float
         Temperature in K.
 
-    fluid :   an AbstractState in coolprop or a fluid in REFPROP.
+    fluid :   depends
+        an AbstractState in coolprop or a fluid in REFPROP.
 
     Returns
     -------
@@ -377,17 +380,20 @@ def T_prop_sat(temp,  fluid, composition=[1.0], option=1, units=_units,
         includes:  properies in saturated state at given pressure p
          of liquid (0,:) and vapor(1,:),
         1: T, p, h, v,s, q
-        0:  T p h v s q cp, viscosity, thermal conductivity, Pr, kinematic viscosity
+        0:  T p h v s q cp, viscosity, thermal conductivity, Pr, 
+        kinematic viscosity
         all in SI units.
 
     """
+    
     vap_liq = []
     for qq in [1, 0]:
         if props == "REFPROP":
 
             if option == 0:
                 o = RP.REFPROP2dll(
-                    fluid, "TQ", "P;H;D;S;CP;VIS;TCX;PRANDTL;KV", units, 0, temp, qq, composition)
+                    fluid, "TQ", "P;H;D;S;CP;VIS;TCX;PRANDTL;KV", units, 0, 
+                    temp, qq, composition)
                 alle = [temp, o.Output[0], o.Output[1], 1 /
                         o.Output[2], o.Output[3], qq, *o.Output[4:9]]
 
@@ -412,11 +418,12 @@ def T_prop_sat(temp,  fluid, composition=[1.0], option=1, units=_units,
                 alle = [temp, p,  h, 1/rho, s,  x]
 
         vap_liq.append(np.array(alle))
+        
     return np.array(vap_liq)
 
 
 def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
-            props=_props):  # HIER geht's weiter
+            props=_props):
     """
     Saturation state properties at given pressure  and quality for a certain 
     fluid (mixture).

@@ -8,14 +8,10 @@ is solved with constant overall heat transfer coefficient  along the axial
 coordinate is implemented, together with some graphical output.
 
 Fluid properties stem from REFPROP or CoolProp, the low-level interface is used.
-
-Planned
-
-
--the convection coefficienets along the axial coordinate 
+Planned are the convection coefficienets along the axial coordinate 
 shall be evaluated using appropriate Nu-correlations
-- optimization will be implemented (Entropy minimization)
-- perhaps pressure drop will be implemented to the bvp
+optimization will be implemented (Entropy minimization)
+perhaps pressure drop will be implemented to the bvp
 
 if nothing else given: counterflow/double-pipe
 if nothing else is said given: steady state
@@ -45,9 +41,9 @@ class heat_exchanger:
 
         Parameters
         ----------
-        fluids : TYPE list 
+        fluids : list 
             two coolProp-Fluid abstrct states (for low level).
-        mass_flows : TYPE list or numpy-array length 2
+        mass_flows : list or numpy-array length 2
            both mass flows.
         pressures : list or numpy-array length 2
             initial pressures of each fluid.

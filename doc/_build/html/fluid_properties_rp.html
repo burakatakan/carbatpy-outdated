@@ -48,7 +48,8 @@
   <section id="fluid-property-evaluation-general">
 <h1>Fluid Property evaluation (general)<a class="headerlink" href="#fluid-property-evaluation-general" title="Permalink to this heading">¶</a></h1>
 <p>At the moment REFPROP (NIST) or CoolProp can be used for property evaluations of
-pure fluids and mixures, TREND (RU Bochum) usage  will be included in near future. They will have to be installed on your system!</p>
+pure fluids and mixures, TREND (RU Bochum) usage  will be included in near future.
+They will have to be installed on your system!</p>
 <span class="target" id="module-fluid_properties_rp"></span><p>Functions to obtain fluid properties from REFPROP or CoolProp using the low
 level interface. (Set _props accordingly)
 Mainly used for thermodynamic cycle calculations.
@@ -63,12 +64,13 @@ Standard units: SI (J, kg, Pa, K,…)</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="fluid_properties_rp.T_prop_sat">
 <span class="sig-prename descclassname"><span class="pre">fluid_properties_rp.</span></span><span class="sig-name descname"><span class="pre">T_prop_sat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">option</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ctREFPROP.ctREFPROP.REFPROPFunctionLibrary.GETENUMdll.iEnum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">props</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'REFPROP'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fluid_properties_rp.T_prop_sat" title="Permalink to this definition">¶</a></dt>
-<dd><p>Saturation state properties at given temperature for a certain fluid (mixture).</p>
+<dd><p>Saturation state properties at given temperature for a certain fluid
+(mixture).t</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>temp</strong> (<em>float</em>) – Temperature in K.</p></li>
-<li><p><strong>fluid</strong> (<em>an AbstractState in coolprop</em><em> or </em><em>a fluid in REFPROP.</em>) – </p></li>
+<li><p><strong>fluid</strong> (<em>depends</em>) – an AbstractState in coolprop or a fluid in REFPROP.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -78,7 +80,8 @@ Standard units: SI (J, kg, Pa, K,…)</p>
 </dd>
 </dl>
 <p>1: T, p, h, v,s, q
-0:  T p h v s q cp, viscosity, thermal conductivity, Pr, kinematic viscosity
+0:  T p h v s q cp, viscosity, thermal conductivity, Pr,
+kinematic viscosity
 all in SI units.</p>
 </p>
 </dd>
