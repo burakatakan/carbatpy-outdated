@@ -9,4 +9,3 @@ Heat Exchanger evaluation
     :members: 
     :undoc-members:
     :show-inheritance:
-    
