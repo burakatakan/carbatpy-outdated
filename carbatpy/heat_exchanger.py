@@ -186,8 +186,7 @@ class counterflow_hex(heat_exchanger):
         
         
     def energy(self,x,h): 
-        """
-        energy balance for solving the boundary value problem
+        """energy balance for solving the boundary value problem
         couples the energy changes of each fluid with the convective heat 
         transfer between both fluids.
         At the moment the convection coefficient from the heat exchanger 
@@ -195,15 +194,21 @@ class counterflow_hex(heat_exchanger):
         this shall be evaluated later as a function of local
         heat exchanger parameters.
         
-        output: both changes in enthalpy in x-direction
-        
-        depends on heat-exchanger variables: 
-            fluids (fluid-names)
-            U: heat transfer coefficient W/m2/K
-            mass_flows: mass flow rates kg/s
-            perimeter: circumference of tube m
-        function hp returns an array, the first value is temperature
+
+        Parameters
+        ----------
+        x : TYPE
+            DESCRIPTION.
+        h : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            both changes in enthalpy in x-direction.
+
         """
+        
         T1 = hp_v(h[1], self.pressures[1], self.fluids[1], units=self.units,
                    props=self.props, option =1, composition=self.compositions[1])[0]
         T0 = hp_v(h[0], self.pressures[0], self.fluids[0], units=self.units,
