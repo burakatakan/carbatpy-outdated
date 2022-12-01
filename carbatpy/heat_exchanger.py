@@ -136,8 +136,7 @@ class counterflow_hex(heat_exchanger):
         no_tubes : integer, optional
             number of inner tubes. The default is 1.
         no_points : integer
-            No of initial points along x, for solving the bvp.
-        
+            No of initial points along x, for solving the bvp.     
         calc_type : string
             if "const" = does not vary along heat exchanger (default)
             if "calc" = calculated from Nusselt correlation 
