@@ -357,10 +357,9 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
 
 def T_prop_sat(temp,  fluid, composition=[1.0], option=1, units=_units,
                props=_props):
-    
     """
     Saturation state properties at given temperature for a certain fluid 
-    (mixture).t
+    (mixture).
 
     Parameters
     ----------
@@ -444,9 +443,8 @@ def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
     -------
     alle : numpy array (2,4)
         includes:  properies in saturated state at given pressure p
-         of liquid (0,:) and vapor(1,:),
+        of liquid (0,:) and vapor(1,:),
         T, p, h, v,s, q
-
         all in SI units.
 
     """

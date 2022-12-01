@@ -44,7 +44,7 @@ class heat_exchanger:
         fluids : list 
             two coolProp-Fluid abstrct states (for low level).
         mass_flows : list or numpy-array length 2
-           both mass flows.
+            both mass flows.
         pressures : list or numpy-array length 2
             initial pressures of each fluid.
         enthalpies : list or numpy-array length 2
@@ -122,7 +122,7 @@ class counterflow_hex(heat_exchanger):
         fluids : TYPE list 
             two coolProp or Refprop-Fluid names.
         mass_flows : TYPE list or numpy-array length 2
-           both mass flows.
+            both mass flows.
         pressures : list or numpy-array length 2
             initial pressures of each fluid.
         enthalpies : list or numpy-array length 2
