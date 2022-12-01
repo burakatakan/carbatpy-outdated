@@ -7,3 +7,4 @@ Heat Exchanger evaluation
     
 .. automodule:: heat_exchanger
     :members:
+    :undoc-members:
