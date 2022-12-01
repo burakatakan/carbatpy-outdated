@@ -7,12 +7,7 @@ So far for several combinations of (input) parameters in the single-phase or
 saturated regime. For the ouput it can be mostly chosen, whether transport 
 properties are als returned, besides the thermodynamiic properties. 
 Functions are also vectorized by hand (Name:"..._v). Physical exergies 
-can be calculated for a state of known h and p.
-Standard units: SI (J, kg, Pa, K,...)
-
-changes 30.11.2022
-
-@author: atakan
+can be calculated for a state of known h and p. Standard units: SI (J, kg, Pa, K,...)
 
 """
 
