@@ -20,7 +20,7 @@ implemented. An optimization will follow.
 
 Burak Atakan, University of Duisburg-Essen, Germany
 
-You can contact us at: batakan [a t ]uni-duisburg.de
+You can contact us at: batakan [a t ]uni-duisburg.de or atakan.thermodynamik.duisburg [ a t] gmail.com
 
 Some documentation is found here: https://carbatpy.readthedocs.io/en/latest/index.html
 
