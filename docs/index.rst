@@ -25,3 +25,6 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+Dependencies: You should have bought a Version of REFPROP 10.0 (NIST), 
+we need the ctREFPROP.dll library. CoolProp should be installed. 
+Besides, numpy, scipy and pandas are used.
