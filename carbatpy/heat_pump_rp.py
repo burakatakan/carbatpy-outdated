@@ -5,8 +5,11 @@ Heat pump cycle incl. heat transfer.
 Calculate the pressures and the mass flow rate to fulfill the heat transfer
 canditions for given (constant!) temperatures of the heat sink and source
 x=1 before the compressor with isentropic efficienc eta and x=0 entering
-the throttle.
-This is done by root finding for a fluid, taking the properties from CoolProp
+the throttle. For now, the heat transfer coefficients are constant, but
+differing between superheated and saturated in the condenser.
+This is done by root finding for a fluid, taking the properties from Refprop 
+or CoolProp, this has to be set globally (_props) at the moment, but will perhaps be 
+included to the functions later.
 Will be used for sensitivity analysis and optimization (hopefully).
 
 
@@ -34,8 +37,8 @@ eta = .65
 p = np.array([6, 15]) * 1e5
 
 
-FLUIDMODEL = "REFPROP" # "REFPROP"  # "CoolProp" CoolProp" #
-_props = FLUIDMODEL  # or "CoolProp"
+FLUIDMODEL = "REFPROP"  # "REFPROP"  or"CoolProp"
+_props = FLUIDMODEL  
 if FLUIDMODEL == "REFPROP":
     os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
     from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
@@ -54,6 +57,22 @@ elif FLUIDMODEL == "CoolProp":
 
 
 def check_bound(p, bounds):
+    """
+    Check whether the parametere p are within the bounds 
+
+    Parameters
+    ----------
+    p : numpy.array
+        parameters to be checked.
+    bounds : list of lists (len(2))
+        list with lists of upper and lower limit for each bounded parameter.
+
+    Returns
+    -------
+    bool
+        True when within limits.
+
+    """
     for i in range(len(p)):
         if not((p[i] >= bounds[i][0]) and (p[i] <= bounds[i][1])):
             return False
@@ -62,6 +81,32 @@ def check_bound(p, bounds):
 
 
 def heat_pump_opti(para, eta, U, T_s, working_fluid, bounds):
+    """
+    Function to optimize (the COP/COP_reversible) of a heat pump with
+    isothermal heat source and heat sink. For further details 
+    see heat_pump_ht
+
+    Parameters
+    ----------
+    para : TYPE
+        DESCRIPTION.
+    eta : TYPE
+        DESCRIPTION.
+    U : TYPE
+        DESCRIPTION.
+    T_s : TYPE
+        DESCRIPTION.
+    working_fluid : TYPE
+        DESCRIPTION.
+    bounds : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
     p = para[:3]
     areas = para[3:5]
     # only binary mixture so far!
@@ -98,7 +143,8 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition =[1.0],
     Heat pump cycle with isothermal source and sink, x=0 after condenser.
 
     x=1 entering the compressor. For optimizing the two working fluid pressures
-    or calculating states, COPs etc
+    or calculating states, COPs etc for optimization, the COP is relative
+    to the reversible COP (Carnot).
 
     Parameters
     ----------

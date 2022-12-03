@@ -74,10 +74,26 @@ class heat_exchanger:
     
     
     def q_max(self, option=0):
-        """ maximum possible heat transfer for an isobaric, adiabatic 
-        heat exchanger
         """
-        
+        Maximum possible heat transfer for an isobaric, adiabatic 
+        heat exchanger
+
+        Parameters
+        ----------
+        option : innteger, optional
+            controls the output. The default is 0.
+
+        Returns
+        -------
+        heatflow rate : float
+            if option is 0.
+        also theoretical max. heatflorates of both fluids : numpy.array len(2)
+        the properties of both theoretical states 
+        at the exit (T, p, h, v, s, q) : numpy.array (2,6)
+            if option is 1
+
+        """
+                
         state_variables = np.zeros((2,6))
         final_states = np.zeros((2,6))
         q_dot = np.zeros((2))
@@ -174,12 +190,13 @@ class counterflow_hex(heat_exchanger):
         self.calc_type = calc_type
         self.name = name
         self.x = np.linspace(0, length, no_points)
-        self.area = self.length * self.diameters[0] * np.pi * self.no_tubes
-        self.UA = self.area * self.U
         self.perimeter =self.diameters[0] * np.pi * self.no_tubes
+        self.area = self.length * self.perimeter
+        self.UA = self.area * self.U
+        
         qm, qd, f_states = self.q_max(1)
         self.min_flow = np.where(qd == qm)[0]
-        self.qm_specific =qm/self.mass_flows[self.min_flow]
+        self.qm_specific =qm / self.mass_flows[self.min_flow]
         self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
                                     self.enthalpies[0] + qm , no_points)
         self.h_out = np.linspace(self.enthalpies[1] - qm, 
