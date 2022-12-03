@@ -167,18 +167,19 @@ class counterflow_hex(heat_exchanger):
         self.pressures = pressures
         self.enthalpies = enthalpies
         self.length = length
-        self. diameters = diameters
+        self.diameters = diameters
         self.U = U
         self.no_tubes = no_tubes
         self.no_points = no_points
         self.calc_type = calc_type
         self.name = name
         self.x = np.linspace(0, length, no_points)
-        self.area = self.length * self.diameters[0] *self.no_tubes
+        self.area = self.length * self.diameters[0] * np.pi * self.no_tubes
+        self.UA = self.area * self.U
         self.perimeter =self.diameters[0] * np.pi * self.no_tubes
         qm, qd, f_states = self.q_max(1)
         self.min_flow = np.where(qd == qm)[0]
-        qm_specific =qm/self.mass_flows[self.min_flow]
+        self.qm_specific =qm/self.mass_flows[self.min_flow]
         self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
                                     self.enthalpies[0] + qm , no_points)
         self.h_out = np.linspace(self.enthalpies[1] - qm, 
@@ -186,7 +187,8 @@ class counterflow_hex(heat_exchanger):
         
         
     def energy(self,x,h): 
-        """energy balance for solving the boundary value problem
+        """
+        energy balance for solving the boundary value problem
         couples the energy changes of each fluid with the convective heat 
         transfer between both fluids.
         At the moment the convection coefficient from the heat exchanger 
@@ -197,15 +199,16 @@ class counterflow_hex(heat_exchanger):
 
         Parameters
         ----------
-        x : TYPE
-            DESCRIPTION.
-        h : TYPE
-            DESCRIPTION.
+        x : float
+            position in m.
+        h : numpy array length (2)
+            specific enthalpies of the two fluids at the given position, 
+            each in J/kg.
 
         Returns
         -------
-        TYPE
-            both changes in enthalpy in x-direction.
+        dh : numpy array length 2
+            both changes in specific enthalpy in positive x-direction in J/(kg m).
 
         """
         
@@ -352,8 +355,9 @@ if __name__  == "__main__":
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
     Tin = [354, 309]  # initial fluid temperatures, assuming single phae each!
     p = [5e5, 4.e5]  # pressure for each fluid, Pa
-    diameters =[1.5e-2, 5e-2]  # m
-    length = 3.  # m
+    diameters =[1.e-2, 5e-2]  # m
+    length = 5.  # m
+    tubes = 6
     fl_names = ["ISOBUTANE", "NONANE"]
     if props =="CoolProp":
         # Isobutane (hot) and water (cold)
@@ -377,17 +381,17 @@ if __name__  == "__main__":
     #  evaluate enthalpies and maximum possible enthalpy changes:
     ha_in = tp(Tin[0], p[0], fl[0], props=props, 
                composition=compositions[0])[2]  # state of fluid 1 left
-    hb_in=tp(Tin[1],p[1],fl[1], props=props, 
-             composition =compositions[1])[2]  # state of fluide 2 right (at L)
+    hb_in = tp(Tin[1],p[1],fl[1], props=props, 
+             composition =compositions[1])[2]  # state of fluid 2 right (at L)
     ha_outMax = tp(Tin[1],p[0],fl[0], props=props, 
                    composition=compositions[0])[2]  # state of fluid 1 left
     hb_outMax = tp(Tin[0],p[1],fl[1], props=props, 
-                   composition =compositions[1])[2]  # state of fluide 2 right (at L)
+                   composition =compositions[1])[2]  # state of fluid 2 right (at L)
 
     
     
-    heat_ex = counterflow_hex(fl, mdot, p, [ha_in,hb_in], 
-                              length, diameters, U=alpha, no_tubes=2, 
+    heat_ex = counterflow_hex(fl, mdot, p, [ha_in, hb_in], 
+                              length, diameters, U=alpha, no_tubes=tubes, 
                               props=props, compositions =compositions)  # assign parameters
     res =heat_ex.he_bvp_solve()  # solve the heat exchanger problem
     
