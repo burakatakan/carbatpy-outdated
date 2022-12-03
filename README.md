@@ -22,3 +22,5 @@ Burak Atakan, University of Duisburg-Essen, Germany
 
 You can contact us at: batakan [a t ]uni-duisburg.de
 
+Some documentation is found here: https://carbatpy.readthedocs.io/en/latest/index.html
+
