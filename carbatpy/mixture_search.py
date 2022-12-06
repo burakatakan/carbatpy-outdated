@@ -21,10 +21,12 @@ Tcond = 273.15+60
 Tin = 273.15 + 20
 Tout = 273.15 + 131.5
 
-fluid_s = "Propane * Pentane * Heptane"
-x0=.695
-x1 = 0.304
+fluid_s = "Propane * Pentane * Butane"
+x0=.55
+x1 = 1-x0 -.02
 comp = [x0, x1, 1-x0-x1]# [.4, 0.5 , 0.1]
+p0 =1.9e5
+p_ratio = 8
 
 def hp_calc(pev, pcond, comp =[1.0], dT_cin=10, fluid_s =fluid_s, eta_s =0.65):
     """
@@ -97,7 +99,7 @@ def find_comp(x, x0, p=1.1e5, T=289.):
     comp = [x0, x, 1- x - x0]
     if (comp[-1] > 0) and (x>0) :
         evap = fprop.p_prop_sat(p, fluid_s, composition = comp, option=1)
-        print(comp, evap[0,0], evap[0,0]-T)
+        # print(comp, evap[0,0], evap[0,0]-T)
         return evap[0,0] - T
     else:
         return 1e6
@@ -105,10 +107,16 @@ def find_comp(x, x0, p=1.1e5, T=289.):
 
 if __name__ == "__main__":
     # calculate a heat pump cycle for a given composition and pressure levels
-    res = hp_calc(1.1e5,1.1e6, comp= comp)
+    res = hp_calc(p0, p0 * p_ratio, comp= comp)
     f, ax = plt.subplots(1)
     ax.plot(res[:,2], res[:,0])
     # find the ternary composition for given compressor inlet T & p:
-    loes = opti.root(find_comp, 0.2, args=(0.695,1.5e5, 290.))
+    loes = opti.root(find_comp, x1, args=(x0,1.5e5, 290.))
+    comp_n = x0, loes.x[0], 1-x0-loes.x[0]
+    print (fluid_s, "%1.3f:%1.3f:%1.3f"%(comp_n[:]))
+    print("success: %7s, result: %1.3f"%( loes.success, loes.x))
+    res = hp_calc(p0, p0 * p_ratio, comp= [x0,loes.x, 1-x0-loes.x])
+    f2, ax2 = plt.subplots(1)
+    ax2.plot(res[:,2]/1000, res[:,0])
     
     
