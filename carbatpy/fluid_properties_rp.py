@@ -161,6 +161,67 @@ def hp(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
     return np.array(alle)
 
 
+def uv(u, v, fluid, composition=[1.0], option=1, units=_units, props=_props):
+    """
+    Properties needed for integration at given  values of internal energy 
+    and specific volume.
+
+    Parameters
+    ----------
+    u : float
+        internal energy in J/kg.
+    v : float
+        specific volume in m3(kg.
+    fluid :   an AbstractState in coolprop. or fluid name in Refprop
+    option: integer
+        if 0 also transport properties will be calculated 
+        (not yet implemented for REFPROP)
+        with option 1 : T,p,h,v,s,x is calculated
+    units: integer
+        units in Refprop (imposrtant: must be SI and mass based (kg, Pa etc.))
+
+    Returns
+    -------
+    alle : numpy array
+        if option = 0 it includes: T, p , quality, specific enthalpy,entropy
+        densities,
+        viscosities, cp , conductivity,phase prandtl-number
+        at the defined state (p,h)
+        all in SI units.
+
+        if option =1: it is compatible to the high level output
+        T,p,h,v,s,x.
+
+    """
+    if props == "REFPROP":
+
+        if option == 0:
+            o = RP.REFPROP2dll(
+                fluid, "ED", "T;p;S;q;CP;VIS;TCX;PRANDTL;KV;H", units, 0, u, 1/v, composition)
+            alle = [*o.Output[0:2], o.Output[9], v,o.Output[2], *o.Output[2:9]]
+            if alle[8] < 0:
+                print("error in uv, probably saturated")
+        if option == 1:
+            o = RP.REFPROP2dll(fluid, "ED", "T;p;S;q;H",
+                               units, 0, u, 1/v, composition)
+            alle = [*o.Output[0:2],  o.Output[4], v,*o.Output[2:4]]
+
+    elif props == "CoolProp":
+        print (" uv not implemented yet for coolprop")
+        # fluid.update(CP.HmassP_INPUTS, h, p)
+        # reihe = [CP.iT, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
+        #          CP.iconductivity, CP.iCpmass, CP.iviscosity]
+        # props = [fluid.keyed_output(k) for k in reihe]
+        # _temp, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
+
+        # if option == 0:
+        #     alle = [_temp, p, x, h,  s, rho, mu,
+        #             cp, lambda_s, phase, prandtl]
+        # elif option == 1:
+        #     alle = [_temp, p,  h, 1/rho, s, x]
+    return np.array(alle)
+
+
 def sp(s, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
     """
     Properties needed for integration at given s and p, single phase.
@@ -271,6 +332,9 @@ def tp(temp, p,  fluid, composition=[1.0], option=1, units=_units,
 
         if option =1: it is compatible to the high level output
         T,p,h,v,s,x.
+        
+        if option =2: molecular mass MM is included
+        T,p,h,v,s,x, MM.
 
     """
     if props == "REFPROP":
@@ -281,6 +345,15 @@ def tp(temp, p,  fluid, composition=[1.0], option=1, units=_units,
 
         elif option == 1:
             alle = [temp, p, o.Output[0], 1 / o.Output[1], *o.Output[2:4]]
+        elif option == 2: ## for moelcular mass ouput:
+            no_compounds = len(composition)
+            mm_string = ";MM"*no_compounds
+            o = RP.REFPROP2dll(fluid, "TP", "H;D;S;q"+ mm_string, units,
+                               0, temp, p, composition)
+            mol_mass_mix = (o.Output[4:4+no_compounds]*np.array(composition)).sum()
+            
+            alle = [temp, p, o.Output[0], 1 / o.Output[1], 
+                    *o.Output[2:4+no_compounds], mol_mass_mix]
     elif props == "CoolProp":
         fluid.update(CP.PT_INPUTS, p, temp)
         reihe = [CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
@@ -382,6 +455,7 @@ def T_prop_sat(temp,  fluid, composition=[1.0], option=1, units=_units,
     """
     
     vap_liq = []
+    alle=0
     for qq in [1, 0]:
         if props == "REFPROP":
 

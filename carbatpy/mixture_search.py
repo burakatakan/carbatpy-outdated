@@ -21,9 +21,9 @@ Tcond = 273.15+60
 Tin = 273.15 + 20
 Tout = 273.15 + 131.5
 
-fluid_s = "Propane * Hexane * Butane"
+fluid_s = "Propane * Hexane * Dimethylether"  # "Butane"
 x0=.55
-x1 = 1-x0 -.02
+x1 = 1-x0 -.08
 comp = [x0, x1, 1-x0-x1]# [.4, 0.5 , 0.1]
 p0 =1.9e5
 p_ratio = 8
@@ -126,15 +126,23 @@ def f_name(fluid_s, comp, p0, p_ratio):
 if __name__ == "__main__":
     # calculate a heat pump cycle for a given composition and pressure levels
     kJ =1/1000
-    
+    pl_list = ((2,0), (4,0))  # , (2,1))
+    names = ("temperature  / K", 
+             "pressure / bar", 
+             "sp. enthalpy / (kJ/kg)", 
+             "specific Volume / (m3/kg)", 
+             "sp. entropy / (kJ/(kg K)")
+    factor = np.array([1, 1e5, 1e3, 1, 1e3])
     res = hp_calc(p0, p0 * p_ratio, comp = comp)
     pos_shift = np.where(res[:,0]==min(res[:,0]))[0]
-    f, ax = plt.subplots(1)
+    f, ax = plt.subplots(len(pl_list), 1)
     
     # find the ternary composition for given compressor inlet T & p:
     loes = opti.root(find_comp, x1, args=(x0,1.5e5, 290.))
     fn, leg = f_name(fluid_s, comp, p0, p_ratio)
-    ax.plot((res[:,2]-res[pos_shift,2]) * kJ, res[:,0], "b-o", label=leg)
+    for ii, was in enumerate(pl_list):
+        ax[ii].plot((res[:,was[0]]-res[pos_shift,was[0]]) * kJ, res[:,was[1]],
+                    "b-o", label=leg)
     comp0 = comp
     comp_n = x0, loes.x[0], 1-x0-loes.x[0]
     print (fluid_s, "%1.3f:%1.3f:%1.3f"%(comp_n[:]))
@@ -142,10 +150,12 @@ if __name__ == "__main__":
     res = hp_calc(p0, p0 * p_ratio, comp= [x0,loes.x, 1-x0-loes.x])
     # f2, ax2 = plt.subplots(1)
     fn, leg = f_name(fluid_s, comp_n, p0, p_ratio)
-    ax.plot((res[:, 2]-res[pos_shift, 2]) * kJ, res[:, 0],"k-v", label=leg)
-    ax.set_xlabel("Enthalpy / (kJ/mol)")
-    ax.set_xlabel("Temperature / K")
-    ax.legend()
+    for ii, was in enumerate(pl_list):
+        ax[ii].plot((res[:, was[0]]-res[pos_shift, [was[0]]]) * kJ, 
+                    res[:, was[1]],"k-v", label=leg)
+        ax[ii].set_xlabel(names[was[0]])
+        ax[ii].set_ylabel(names[was[1]])
+    ax[ii].legend()
     
     f.savefig(fn)
             
