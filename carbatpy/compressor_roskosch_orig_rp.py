@@ -11,7 +11,7 @@ Created on Thu Jan 31 17:46:25 2019
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm
+from carbatpy.fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm
 
 
 
@@ -81,7 +81,7 @@ pV = np.zeros(8, float)
 pZ = np.zeros(7, float)
 pZyk = np.zeros(2, float)
 z_it = np.zeros([IS, 16])
-fluid = []
+#fluid = []
 comp = [1.0]  # must be checked BA
 
 
@@ -125,8 +125,8 @@ def Zustand_th_Masse(Q):
     return
 
 
-def Kompression():
-    global z_it, fluid, comp
+def Kompression(fluid):
+    global z_it, comp
     Schritt = 0
     W = -z_it[i-1, 6] * (z_it[i, 2] - z_it[i-1, 2])  # Kompressionsarbeit, kJ
     Wr = -pV[5] * (z_it[i, 2] - z_it[i-1, 2])  # Reibarbeit, kJ
@@ -149,8 +149,8 @@ def Kompression():
     return z_it
 
 
-def Ausschieben():
-    global z_it, fluid, comp
+def Ausschieben(fluid):
+    global z_it, comp
     Schritt = 1
     W=-z_it[i-1,6]*(z_it[i,2]-z_it[i-1,2])#Kompressionsarbeit, kJ
     Wr=-pV[5]*(z_it[i,2]-z_it[i-1,2])#Reibarbeit, kJ
@@ -176,8 +176,8 @@ def Ausschieben():
     z_it[i, 14:16] = dm, Q
 
 
-def Expansion():
-    global z_it, fluid, comp
+def Expansion(fluid):
+    global z_it, comp
     Schritt = 2            
     W = -z_it[i-1, 6] * (z_it[i, 2] - z_it[i-1, 2])  # Kompressionsarbeit, kJ
     Wr = pV[5] * (z_it[i, 2] - z_it[i-1, 2])  # Reibarbeit, kJ
@@ -200,8 +200,8 @@ def Expansion():
     z_it[i, 14:16] = dm, Q
 
 
-def Ansaugen():
-    global z_it, fluid, comp
+def Ansaugen(fluid):
+    global z_it, comp
     Schritt = 3
     W = -z_it[i-1, 6] * (z_it[i, 2] - z_it[i-1, 2])  # Kompressionsarbeit, kJ
     Wr = pV[5] * (z_it[i, 2] - z_it[i-1, 2])  # Reibarbeit, kJ
@@ -225,8 +225,8 @@ def Ansaugen():
     
     
 
-def ProzessIter():
-    global pZyk, z_it, i, IS, IS0, fluid, comp
+def ProzessIter(fluid):
+    global pZyk, z_it, i, IS, IS0, comp
     
     #Setzen von Aeff_e, explizite Funktion
     M = z_mm(300, 100.,fluid, comp)[-1]  # CP.PropsSI("M",fluid) # Molmasse kg/mol
@@ -243,14 +243,14 @@ def ProzessIter():
         for i in range(1, IS):
             if z_it[i,0] <= np.pi:
                 if z_it[i-1, 6] <= pZ[6]:
-                    Kompression()
+                    Kompression(fluid)
                 else:
-                    Ausschieben()
+                    Ausschieben(fluid)
             else:
                 if z_it[i-1,6] >= pZ[1]:
-                    Expansion()
+                    Expansion(fluid)
                 else:
-                    Ansaugen()
+                    Ansaugen(fluid)
 
         # Fehlerquadratsumme T, p, T_th_mittel
         error = np.sqrt((z_it[-1, 5] - z_it[0, 5])**2.) + np.sqrt((z_it[-1, 6]
@@ -295,7 +295,7 @@ def ProzessIter():
 
 
 def getETA(T_e, p_e, p_a, fluid_in, comp):
-    global pV, pz, z_it
+    global pV, pZ, z_it
     fluid = fluid_in
     comp = comp
 
@@ -322,11 +322,11 @@ def getETA(T_e, p_e, p_a, fluid_in, comp):
     ##### Starttemp thermische Masse, pro Zyklusdurchlauf gibt es stehts nur eine Temperatur
     ##### Startwert frei wählbar, beeinflusst maßgeblich Iterationszeit.
     z_it[:, 12] = 42.+273
-    Isentr,Liefer = ProzessIter()
+    Isentr,Liefer = ProzessIter(fluid)
     return np.array((Isentr, Liefer))
 
 def geometrie():
-    global pV, pz, z_it, fluid, IS
+    global pV, pZ, z_it, fluid, IS
     z_it[:, 0] = np.linspace(0., 2 * np.pi, IS)
     z_it[:, 1] = -(pV[1] / 2. * (1. -np.cos(z_it[:, 0]) + pV[2] * 
         (1.-np.sqrt(1. - (1. / pV[2] * np.sin(z_it[:,0]))**2.)))) + \
@@ -339,29 +339,27 @@ def geometrie():
 
 
 #Beispiel #################################################
-fluid = 'Propane * Butane'
-comp = [1.0, 0.]
-pe = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
-pa =  z_Tx(355, 0, fluid, comp)[1] # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
+if __name__ == "__main__":
+    fluid = 'Propane * Butane'
+    comp = [1.0, 0.]
+    pe = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
+    pa =  z_Tx(355, 0, fluid, comp)[1] # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
 
 
-fo = open("Daten.txtx","w")
-print("Drücke %2.2f kPa %2.2f kPa" % (pe, pa))
-dt_all=np.linspace(9.5,20.5,3)
-out=[]
-for dt in dt_all:
-    o1 = getETA(dt + 273.15,pe,pa,fluid, comp)
-    #o1.append((np.max(z_it[:,11]) - np.min(z_it[:,11]) * pV[7]))  # Massenstrom
-    out.append(o1)
-    print(dt, o1)
-out = np.array(out)
-plt.plot(dt_all, out)
-fo.write(str(out))
-fo.close()
-
-
-
-
+    fo = open("Daten.txtx","w")
+    print("Drücke %2.2f kPa %2.2f kPa" % (pe, pa))
+    dt_all=np.linspace(9.5,20.5,3)
+    out=[]
+    for dt in dt_all:
+        o1 = getETA(dt + 273.15,pe,pa,fluid, comp)
+        #o1.append((np.max(z_it[:,11]) - np.min(z_it[:,11]) * pV[7]))  # Massenstrom
+        out.append(o1)
+        print(dt, o1)
+    out = np.array(out)
+    plt.plot(dt_all, out)
+    plt.show()
+    fo.write(str(out))
+    fo.close()
 
 
 

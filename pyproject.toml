@@ -1,21 +1,15 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Oct  3 09:27:38 2022
-
-@author: atakan
-"""
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "carbatpy",
-version = "0.0.1",
+name = "carbatpy"
+version = "0.0.1"
 authors = [
     { name = "Burak Atakan", email = "batakan@uni-duisburg.de"},
     ]
-description = ("A module to calculate and optimize Carnot Batteries \
-               (Thermal energy storage)")
+description = "A module to calculate and optimize Carnot Batteries (Thermal energy storage)"
 readme ='README.md'
 requires-python = ">=3.7"
 classifiers=[
@@ -38,12 +32,12 @@ packages=['carbatpy']
 
 [tool.setuptools]
 packages = ["carbatpy"]
-[tool.setuptools.packages.find]
+#[tool.setuptools.packages.find]
 where = ["src", "src/run_scripts", "src/analysis"]  # list of folders that contain the packages (["."] by default)
 # include = ["my_package*"]  # package names should match these glob patterns (["*"] by default)
 exclude = ["carbatpy.tests*"]  # exclude packages matching these glob patterns (empty by default)
 namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
 
 [project.urls]
-"Homepage" = "https://github.com/burakatakan/carbatpy",
+"Homepage" = "https://github.com/burakatakan/carbatpy"
 

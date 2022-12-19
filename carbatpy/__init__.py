@@ -4,4 +4,4 @@ Created on Mon Oct  3 11:35:21 2022
 
 @author: atakan
 """
-__all__ = ["fluid_properties_rp", "heat_exchanger", "optimize_mixture", "rev_condenser"]
+__all__ = ["fluid_properties_rp", "heat_exchanger", "optimize_mixture", "rev_condenser", "compressor_roskosch_orig_rp", "test_compressor_roskosch_orig_rp"]

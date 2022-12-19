@@ -8,8 +8,7 @@ Created on Wed Nov  9 15:46:10 2022
 import ctypes as ct
 import os
 
-dp = 'C:\\Users\\atakan\\sciebo\\Progs\\TREND_50\TREND_x64.dll'
-# os.chdir(dp)
+
 
 class ReVal(ct.Structure):
     _fields_ = [("T", ct.c_double),
@@ -29,7 +28,10 @@ class ReVal(ct.Structure):
                 ("Q", ct.c_double)
                 ]
 
-t_lib = ct.windll.LoadLibrary(dp)
-print(ct.cdll.TREND_x64)
+if __name__ == "__main__":
+    dp = 'C:\\Users\\atakan\\sciebo\\Progs\\TREND_50\TREND_x64.dll'
+    # os.chdir(dp)
+    t_lib = ct.windll.LoadLibrary(dp)
+    print(ct.cdll.TREND_x64)
 
-t_lib.ALLPROP_STDCALL.restype = ReVal
+    t_lib.ALLPROP_STDCALL.restype = ReVal
