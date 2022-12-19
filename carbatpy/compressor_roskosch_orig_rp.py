@@ -75,22 +75,14 @@ Ver0 = [34e-3, 34e-3, 2., .04]  # Fit-Verdichter: D, H, Zylinder, Außenfläche
 
 
 
-IS = 360  # Anzahl der differentiellen Schritte für einen Zyklus
-IS0 = IS
-pV = np.zeros(8, float)
-pZ = np.zeros(7, float)
-pZyk = np.zeros(2, float)
-z_it = np.zeros([IS, 16])
-#fluid = []
-comp = [1.0]  # must be checked BA
+
 
 
 def find(condition):
     res, = np.nonzero(np.ravel(condition))
     return res
 
-def getalp():
-    global z_it
+def getalp(z_it, i, pV):
     '''
     Berechnet den Wärmeübergangskoeffizient Gas/Zylinderwand
     Woschni Korrelation
@@ -107,8 +99,7 @@ def getalp():
     return alp
 
 
-def Zustand_th_Masse(Q):
-    global z_it
+def Zustand_th_Masse(Q, z_it, i, pV):
     '''Berechnet die Temperaturänderung der thermischen Masse als Funktion des
     Wärmeübergang Innen (Q) und des Wärmeübergangs zur Umgebung (Q_u)
     '''
@@ -125,15 +116,14 @@ def Zustand_th_Masse(Q):
     return
 
 
-def Kompression(fluid):
-    global z_it, comp
+def Kompression(i, fluid, z_it, comp, pV):
     Schritt = 0
     W = -z_it[i-1, 6] * (z_it[i, 2] - z_it[i-1, 2])  # Kompressionsarbeit, kJ
     Wr = -pV[5] * (z_it[i, 2] - z_it[i-1, 2])  # Reibarbeit, kJ
-    getalp()
+    getalp(z_it, i, pV)
     Q = z_it[i, 13] * z_it[i, 3] * (z_it[i-1, 12] - z_it[i-1, 5]) * \
         ((z_it[i, 0] - z_it[i-1, 0]) / (2. * np.pi * pV[7])) * 1e-3  # kJ
-    Zustand_th_Masse(-Q)
+    Zustand_th_Masse(-Q, z_it, i, pV)
     dm = 0.  # Keine Ein- oder Ausströmende Masse
     mi = z_it[i-1, 11]  # Masse im Zylinder, kg
     ui = (Q + W + Wr) / mi + z_it[i-1, 8]  # kJ/kg
@@ -149,15 +139,14 @@ def Kompression(fluid):
     return z_it
 
 
-def Ausschieben(fluid):
-    global z_it, comp
+def Ausschieben(i, fluid, z_it, comp, pV, pZyk, pZ):
     Schritt = 1
     W=-z_it[i-1,6]*(z_it[i,2]-z_it[i-1,2])#Kompressionsarbeit, kJ
     Wr=-pV[5]*(z_it[i,2]-z_it[i-1,2])#Reibarbeit, kJ
-    getalp()
+    getalp(z_it, i, pV)
     Q = z_it[i, 13] * z_it[i, 3] * (z_it[i-1, 12] - z_it[i-1, 5]) * \
         ((z_it[i, 0] - z_it[i-1, 0]) / (2. * np.pi*pV[7]))*1e-3  # kJ
-    Zustand_th_Masse(-Q)
+    Zustand_th_Masse(-Q, z_it, i, pV)
     m_dot = pZyk[1] / z_it[i-1, 7] * np.sqrt(2. * (z_it[i-1, 6] - pZ[6]) * \
             1000. * z_it[i-1, 7])  # Massenstrom der den Zylinder verlässt, kg/s
     dm = m_dot * ((z_it[i, 0] - z_it[i-1, 0]) / (2. * np.pi * pV[7]))
@@ -176,16 +165,15 @@ def Ausschieben(fluid):
     z_it[i, 14:16] = dm, Q
 
 
-def Expansion(fluid):
-    global z_it, comp
+def Expansion(i, fluid, z_it, comp, pV):
     Schritt = 2            
     W = -z_it[i-1, 6] * (z_it[i, 2] - z_it[i-1, 2])  # Kompressionsarbeit, kJ
     Wr = pV[5] * (z_it[i, 2] - z_it[i-1, 2])  # Reibarbeit, kJ
-    getalp()
+    getalp(z_it, i, pV)
     Q = z_it[i, 13] * z_it[i, 3] * (z_it[i-1, 12] - z_it[i-1, 5]) * \
         ((z_it[i, 0] - z_it[i-1, 0]) / (2. * np.pi * pV[7])) * 1e-3  # kJ
 
-    Zustand_th_Masse(-Q)
+    Zustand_th_Masse(-Q, z_it, i, pV)
     dm = 0.  # Keine Ein- oder Ausströmende Masse
     mi = z_it[i-1, 11]  # Masse im Zylinder, kg
     ui = (Q + W + Wr) / z_it[i-1, 11] + z_it[i-1, 8]  # Energiebilanz
@@ -200,15 +188,14 @@ def Expansion(fluid):
     z_it[i, 14:16] = dm, Q
 
 
-def Ansaugen(fluid):
-    global z_it, comp
+def Ansaugen(i, fluid, z_it, comp, pV, pZyk, pZ):
     Schritt = 3
     W = -z_it[i-1, 6] * (z_it[i, 2] - z_it[i-1, 2])  # Kompressionsarbeit, kJ
     Wr = pV[5] * (z_it[i, 2] - z_it[i-1, 2])  # Reibarbeit, kJ
-    getalp()
+    getalp(z_it, i, pV)
     Q = z_it[i, 13] * z_it[i, 3] * (z_it[i-1, 12] - z_it[i-1, 5]) * \
         ((z_it[i, 0] - z_it[i-1, 0]) / (2. * np.pi * pV[7])) * 1e-3  # kJ
-    Zustand_th_Masse(-Q)
+    Zustand_th_Masse(-Q, z_it, i, pV)
     
     m_dot = pZyk[0] / pZ[2] * np.sqrt(2. * (pZ[1] - z_it[i-1, 6]) * 1000 * pZ[2])  # Massenstrom der den Zylinder verlässt, kg
     dm = m_dot * ((z_it[i ,0] - z_it[i-1, 0]) / (2. * np.pi * pV[7]))  # Ausgeschobene Masse, kg
@@ -225,9 +212,7 @@ def Ansaugen(fluid):
     
     
 
-def ProzessIter(fluid):
-    global pZyk, z_it, i, IS, IS0, comp
-    
+def ProzessIter(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
     #Setzen von Aeff_e, explizite Funktion
     M = z_mm(300, 100.,fluid, comp)[-1]  # CP.PropsSI("M",fluid) # Molmasse kg/mol
     pZyk[0] = 2.0415e-3 * (Rm / M)**(-.9826) * pV[0]**2. / Ver0[0]**2.  # Effektiver Strömungsquerschnitt Eintritt, m²
@@ -243,14 +228,14 @@ def ProzessIter(fluid):
         for i in range(1, IS):
             if z_it[i,0] <= np.pi:
                 if z_it[i-1, 6] <= pZ[6]:
-                    Kompression(fluid)
+                    Kompression(i, fluid, z_it, comp, pV)
                 else:
-                    Ausschieben(fluid)
+                    Ausschieben(i, fluid, z_it, comp, pV, pZyk, pZ)
             else:
                 if z_it[i-1,6] >= pZ[1]:
-                    Expansion(fluid)
+                    Expansion(i, fluid, z_it, comp, pV)
                 else:
-                    Ansaugen(fluid)
+                    Ansaugen(i, fluid, z_it, comp, pV, pZyk, pZ)
 
         # Fehlerquadratsumme T, p, T_th_mittel
         error = np.sqrt((z_it[-1, 5] - z_it[0, 5])**2.) + np.sqrt((z_it[-1, 6]
@@ -266,7 +251,7 @@ def ProzessIter(fluid):
                 z_it = np.zeros([IS, 16])
                 z_it[:IS0,:] = z0_
                 z_it[IS0:,:] = z0_[-1,:]
-                geometrie()  # die Winkel etc. richtig berechnen
+                geometrie(pV, pZ, z_it, fluid, IS)  # die Winkel etc. richtig berechnen
             else:
                 break
         else:
@@ -294,8 +279,7 @@ def ProzessIter(fluid):
     return Isentr, Liefer
 
 
-def getETA(T_e, p_e, p_a, fluid_in, comp):
-    global pV, pZ, z_it
+def getETA(T_e, p_e, p_a, fluid_in, comp, pV, pZ, z_it, IS, pZyk, IS0):
     fluid = fluid_in
     comp = comp
 
@@ -322,11 +306,10 @@ def getETA(T_e, p_e, p_a, fluid_in, comp):
     ##### Starttemp thermische Masse, pro Zyklusdurchlauf gibt es stehts nur eine Temperatur
     ##### Startwert frei wählbar, beeinflusst maßgeblich Iterationszeit.
     z_it[:, 12] = 42.+273
-    Isentr,Liefer = ProzessIter(fluid)
+    Isentr,Liefer = ProzessIter(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ)
     return np.array((Isentr, Liefer))
 
-def geometrie():
-    global pV, pZ, z_it, fluid, IS
+def geometrie(pV, pZ, z_it, fluid, IS):
     z_it[:, 0] = np.linspace(0., 2 * np.pi, IS)
     z_it[:, 1] = -(pV[1] / 2. * (1. -np.cos(z_it[:, 0]) + pV[2] * 
         (1.-np.sqrt(1. - (1. / pV[2] * np.sin(z_it[:,0]))**2.)))) + \
@@ -340,6 +323,15 @@ def geometrie():
 
 #Beispiel #################################################
 if __name__ == "__main__":
+    IS = 360  # Anzahl der differentiellen Schritte für einen Zyklus
+    IS0 = IS
+    pV = np.zeros(8, float)
+    pZ = np.zeros(7, float)
+    pZyk = np.zeros(2, float)
+    z_it = np.zeros([IS, 16])
+    # fluid = []
+    #comp = [1.0]  # must be checked BA
+
     fluid = 'Propane * Butane'
     comp = [1.0, 0.]
     pe = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
@@ -351,7 +343,7 @@ if __name__ == "__main__":
     dt_all=np.linspace(9.5,20.5,3)
     out=[]
     for dt in dt_all:
-        o1 = getETA(dt + 273.15,pe,pa,fluid, comp)
+        o1 = getETA(dt + 273.15,pe,pa,fluid, comp, pV, pZ, z_it, IS, pZyk, IS0)
         #o1.append((np.max(z_it[:,11]) - np.min(z_it[:,11]) * pV[7]))  # Massenstrom
         out.append(o1)
         print(dt, o1)
