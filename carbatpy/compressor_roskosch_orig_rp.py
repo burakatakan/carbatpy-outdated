@@ -105,7 +105,7 @@ def state_th_Masse(Q, z_it, i, pV):
     Q_u = alp_a * A * (Tu - z_it[i - 1, 12]) * ((z_it[i, 0] - z_it[i - 1, 0]) /
                                                 (2. * np.pi * pV[7])) * 1e-3  # kJ
     z_it[i, 12] = (Q + Q_u) / cv / m + z_it[i - 1, 12]
-    return
+    return z_it
 
 
 def compression(i, fluid, z_it, comp, pV):
@@ -155,6 +155,7 @@ def push_out(i, fluid, z_it, comp, pV, pZyk, pZ):
     z_it[i, 5:11] = zi
     z_it[i, 11] = mi
     z_it[i, 14:16] = dm, Q
+    return z_it
 
 
 def expansion(i, fluid, z_it, comp, pV):
@@ -178,6 +179,7 @@ def expansion(i, fluid, z_it, comp, pV):
     z_it[i, 5:11] = zi
     z_it[i, 11] = mi
     z_it[i, 14:16] = dm, Q
+    return z_it
 
 
 def suction(i, fluid, z_it, comp, pV, pZyk, pZ):
@@ -203,6 +205,7 @@ def suction(i, fluid, z_it, comp, pV, pZyk, pZ):
     z_it[i, 5: 11] = zi
     z_it[i, 11] = mi
     z_it[i, 14:16] = dm, Q
+    return z_it
 
 
 def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
@@ -223,14 +226,14 @@ def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
         for i in range(1, IS):
             if z_it[i, 0] <= np.pi:
                 if z_it[i - 1, 6] <= pZ[6]:
-                    compression(i, fluid, z_it, comp, pV)
+                    z_it = compression(i, fluid, z_it, comp, pV)
                 else:
-                    push_out(i, fluid, z_it, comp, pV, pZyk, pZ)
+                    z_it = push_out(i, fluid, z_it, comp, pV, pZyk, pZ)
             else:
                 if z_it[i - 1, 6] >= pZ[1]:
-                    expansion(i, fluid, z_it, comp, pV)
+                    z_it = expansion(i, fluid, z_it, comp, pV)
                 else:
-                    suction(i, fluid, z_it, comp, pV, pZyk, pZ)
+                    z_it = suction(i, fluid, z_it, comp, pV, pZyk, pZ)
 
         # error square sum T, p, T_th_average
         error = np.sqrt((z_it[-1, 5] - z_it[0, 5]) ** 2.) + np.sqrt((z_it[-1, 6]
