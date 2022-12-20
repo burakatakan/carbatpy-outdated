@@ -17,6 +17,7 @@ Rm = 8.3145  # gas constant J/mol/K
 Tu = 25. + 273.15  # ambient temperature
 dTK = 273.15  # conversion °C / K
 Ver0 = [34e-3, 34e-3, 2., .04]  # fit-compressor: D, H, cylinder, outer surface
+# TODO what is fit-compressor? duplication with pV!
 
 
 ###########################################
@@ -206,17 +207,18 @@ def suction(i, fluid, z_it, comp, pV, pZyk, pZ):
 
 def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
     # setting of Aeff_i, explicit function
-    M = z_mm(300, 100., fluid, comp)[-1]  # CP.PropsSI("M",fluid) # molar mass kg/mol
+    M = z_mm(300, 100., fluid, comp)[-1]  # CP.PropsSI("M",fluid) # molar mass kg/mol # AW ramdom inlet conditions, molar mass contant
     pZyk[0] = 2.0415e-3 * (Rm / M) ** (-.9826) * pV[0] ** 2. / Ver0[
         0] ** 2.  # effective flow cross-section inlet, m²
-
-    # setting of Aeff_i, implicit function relatively to average mass flow density over valve
+    # TODO source of values for Aeff_i
+    # setting of Aeff_o, implicit function relatively to average mass flow density over valve
     # at 1st iteration, the mass flow density is unknown, typical value is guessed
     pZyk[1] = 1.5e-5 * pV[0] ** 2. / Ver0[0] ** 2.
     # print(pZyk)
     count = 0
 
     while 1:
+    # TODO remove unnecessary while loop
         count += 1
         for i in range(1, IS):
             if z_it[i, 0] <= np.pi:
@@ -244,7 +246,7 @@ def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
                 z_it = np.zeros([IS, 16])
                 z_it[:IS0, :] = z0_
                 z_it[IS0:, :] = z0_[-1, :]
-                geometrie(pV, pZ, z_it, fluid, IS)  # calculate angle correctly
+                geometry(pV, pZ, z_it, fluid, IS)  # calculate angle correctly
             else:
                 break
         else:
@@ -285,15 +287,17 @@ def getETA(T_e, p_e, p_a, fluid_in, comp, pV, pZ, z_it, IS, pZyk, IS0):
                    comp)  # fl.zs_kg(['T','p'],[T_e,p_e],['T','p','v','u','h','s'],fluid) #state suction pipe
     pZ[6] = p_a  # pressure in pressure pipe
     print(pZ)
-    ############### set geometrie ##################################
+    ############### set geometry ##################################
     z_it[:, 0] = np.linspace(0., 2 * np.pi, IS)
     z_it[:, 1] = -(pV[1] / 2. * (1. - np.cos(z_it[:, 0]) + pV[2] *
                                  (1. - np.sqrt(1. - (1. / pV[2] * np.sin(z_it[:, 0])) ** 2.)))) + \
                  pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
-    a_head = np.pi / 4. * pV[0] ** 2.
+    a_head = np.pi / 4. * pV[0] ** 2.   # area of cylinder head
     z_it[:, 2] = a_head * z_it[:, 1]  # volume cylinder
     z_it[:, 3] = np.pi * pV[0] * z_it[:, 1] + 2. * a_head  # heat transfer surfaces
-
+    #plt.plot(z_it[:,0], z_it[:, 1]) #AW
+    #plt.show() #AW
+    # TODO Check if volume is correctly used during cylce
     ########## set start conditions in the cylinder ##################
     z_it[0, 5:11] = pZ[0:6]
     z_it[0, 11] = z_it[0, 2] / z_it[0, 7]  # V/v, Cylinder completely filled with suction gas
@@ -304,7 +308,7 @@ def getETA(T_e, p_e, p_a, fluid_in, comp, pV, pZ, z_it, IS, pZyk, IS0):
     return np.array((is_eff, degree_delivery))
 
 
-def geometrie(pV, pZ, z_it, fluid, IS):
+def geometry(pV, pZ, z_it, fluid, IS):
     z_it[:, 0] = np.linspace(0., 2 * np.pi, IS)
     z_it[:, 1] = -(pV[1] / 2. * (1. - np.cos(z_it[:, 0]) + pV[2] *
                                  (1. - np.sqrt(1. - (1. / pV[2] * np.sin(z_it[:, 0])) ** 2.)))) + \
