@@ -87,7 +87,7 @@ def getalp(z_it, i, pV):
     alp = 127.93 * pV[0] ** (-.2) * (z_it[i - 1, 6] * 1e-2) ** .8 * \
           (z_it[i - 1, 5]) ** (-.55) * (k * v_p) ** .8
     z_it[i, 13] = alp
-    return alp
+    return z_it
 
 
 def state_th_Masse(Q, z_it, i, pV):
@@ -105,6 +105,8 @@ def state_th_Masse(Q, z_it, i, pV):
     Q_u = alp_a * A * (Tu - z_it[i - 1, 12]) * ((z_it[i, 0] - z_it[i - 1, 0]) /
                                                 (2. * np.pi * pV[7])) * 1e-3  # kJ
     z_it[i, 12] = (Q + Q_u) / cv / m + z_it[i - 1, 12]
+    # TODO neglecting W and Wr
+    # TODO why m and cv not important?
     return z_it
 
 
@@ -112,10 +114,10 @@ def compression(i, fluid, z_it, comp, pV):
     step = 0
     W = -z_it[i - 1, 6] * (z_it[i, 2] - z_it[i - 1, 2])  # compression work, kJ
     Wr = -pV[5] * (z_it[i, 2] - z_it[i - 1, 2])  # friction work, kJ
-    getalp(z_it, i, pV)
+    z_it = getalp(z_it, i, pV)
     Q = z_it[i, 13] * z_it[i, 3] * (z_it[i - 1, 12] - z_it[i - 1, 5]) * \
         ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7])) * 1e-3  # kJ
-    state_th_Masse(-Q, z_it, i, pV)
+    z_it = state_th_Masse(-Q, z_it, i, pV)
     dm = 0.  # no mass flow over boundaries
     mi = z_it[i - 1, 11]  # mass inside cylinder, kg
     ui = (Q + W + Wr) / mi + z_it[i - 1, 8]  # kJ/kg
@@ -135,10 +137,10 @@ def push_out(i, fluid, z_it, comp, pV, pZyk, pZ):
     step = 1
     W = -z_it[i - 1, 6] * (z_it[i, 2] - z_it[i - 1, 2])  # compression work, kJ
     Wr = -pV[5] * (z_it[i, 2] - z_it[i - 1, 2])  # friction work, kJ
-    getalp(z_it, i, pV)
+    z_it = getalp(z_it, i, pV)
     Q = z_it[i, 13] * z_it[i, 3] * (z_it[i - 1, 12] - z_it[i - 1, 5]) * \
         ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7])) * 1e-3  # kJ
-    state_th_Masse(-Q, z_it, i, pV)
+    z_it = state_th_Masse(-Q, z_it, i, pV)
     m_dot = pZyk[1] / z_it[i - 1, 7] * np.sqrt(2. * (z_it[i - 1, 6] - pZ[6]) * \
                                                1000. * z_it[i - 1, 7])  # mass flow leaving the cylinder, kg/s
     dm = m_dot * ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7]))
@@ -300,7 +302,6 @@ def getETA(T_e, p_e, p_a, fluid_in, comp, pV, pZ, z_it, IS, pZyk, IS0):
     z_it[:, 3] = np.pi * pV[0] * z_it[:, 1] + 2. * a_head  # heat transfer surfaces
     #plt.plot(z_it[:,0], z_it[:, 1]) #AW
     #plt.show() #AW
-    # TODO Check if volume is correctly used during cylce
     ########## set start conditions in the cylinder ##################
     z_it[0, 5:11] = pZ[0:6]
     z_it[0, 11] = z_it[0, 2] / z_it[0, 7]  # V/v, Cylinder completely filled with suction gas
