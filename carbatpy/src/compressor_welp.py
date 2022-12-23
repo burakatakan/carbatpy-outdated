@@ -35,20 +35,21 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     # setting of Aeff_o, implicit function relatively to average mass flow density over valve
     # at 1st iteration, the mass flow density is unknown, typical value is guessed
     Aeff_o = 1.5e-5 * pV[0] ** 2. / Ver0[0] ** 2.
+
+
     # print(pZyk)
 
 
-def fun(x, y, pV, a_head, fluid, comp, pZ):
+def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
     pos_piston = -(pV[1] / 2. * (1. - np.cos(x) + pV[2] *
                     (1. - np.sqrt(1. - (1. / pV[2] * np.sin(x)) ** 2.)))) + pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
     volume_cylinder = a_head * pos_piston  # volume cylinder
     ht_surface = np.pi * pV[0] * pos_piston + 2. * a_head  # heat transfer surfaces
     vi = volume_cylinder / y[0]  # specific volume in cylinder, m³/kg
-    [Ti, pi, vi, ui, hi, si] = z_uv(y[1], vi, fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
-    T_thermal_mass =
+    [Ti, pi, vi, y[1], hi, si] = z_uv(y[1], vi, fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
     dxdt = -pV[1] / 2 * (np.sin(x) - pV[2] * (0.5 * (1 - (1 / pV[2] * np.sin(x)) ** 2))**-0.5 * \
            (-2 * 1 / pV[2] * np.sin(x)) * 1 / pV[2] * np.cos(x))
-    dVdt = -np.pi ** 2 * f * pV[0] ** 2 / 2 * dxdt
+    dVdt = -np.pi ** 2 * pZ[7] * pV[0] ** 2 / 2 * dxdt
     dW_fric = - pV[5] * dVdt
     dW_rev = -pi * dVdt
     if x <= np.pi:
@@ -58,9 +59,10 @@ def fun(x, y, pV, a_head, fluid, comp, pZ):
             [alp, m_dot_in, m_dot_out] = push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
     else:
         if pi >= pZ[1]:
-            z_it = expansion(i, fluid, z_it, comp, pV)
+            z_it = expansion(pV, pos_piston, dxdt, Ti, pi)
         else:
-            z_it = suction(i, fluid, z_it, comp, pV, pZyk, pZ)
+            z_it = suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
+
     dQ = alp * ht_surface * (y[2] - Ti)  # kW
     dthermal_dt = state_th_Masse(y, -Q, pV)
     dmdt = m_dot_in - m_dot_out
@@ -130,7 +132,7 @@ def suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
     return alp, m_dot_in, m_dot_out
 
 def bc(ya, yb):
-    return np.array([yb[1] - ya[1], ya[0]])
+    return np.array([yb[0] - ya[0], yb[1] - ya[1], yb[2] - ya[2]])
 
 
 x_var = np.linspace(0,10,100)
