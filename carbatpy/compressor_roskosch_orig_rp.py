@@ -105,8 +105,6 @@ def state_th_Masse(Q, z_it, i, pV):
     Q_u = alp_a * A * (Tu - z_it[i - 1, 12]) * ((z_it[i, 0] - z_it[i - 1, 0]) /
                                                 (2. * np.pi * pV[7])) * 1e-3  # kJ
     z_it[i, 12] = (Q + Q_u) / cv / m + z_it[i - 1, 12]
-    # TODO neglecting W and Wr
-    # TODO why m and cv not important?
     return z_it
 
 
@@ -215,7 +213,6 @@ def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
     M = z_mm(300, 100., fluid, comp)[-1]  # CP.PropsSI("M",fluid) # molar mass kg/mol # AW ramdom inlet conditions, molar mass contant
     pZyk[0] = 2.0415e-3 * (Rm / M) ** (-.9826) * pV[0] ** 2. / Ver0[
         0] ** 2.  # effective flow cross-section inlet, m²
-    # TODO source of values for Aeff_i
     # setting of Aeff_o, implicit function relatively to average mass flow density over valve
     # at 1st iteration, the mass flow density is unknown, typical value is guessed
     pZyk[1] = 1.5e-5 * pV[0] ** 2. / Ver0[0] ** 2.
@@ -223,7 +220,6 @@ def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
     count = 0
 
     while 1:
-    # TODO remove unnecessary while loop
         count += 1
         for i in range(1, IS):
             if z_it[i, 0] <= np.pi:
