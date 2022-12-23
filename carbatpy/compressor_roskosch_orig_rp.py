@@ -162,7 +162,7 @@ def expansion(i, fluid, z_it, comp, pV):
     step = 2
     W = -z_it[i - 1, 6] * (z_it[i, 2] - z_it[i - 1, 2])  # compression work, kJ
     Wr = pV[5] * (z_it[i, 2] - z_it[i - 1, 2])  # friction work, kJ
-    getalp(z_it, i, pV)
+    z_it = getalp(z_it, i, pV)
     Q = z_it[i, 13] * z_it[i, 3] * (z_it[i - 1, 12] - z_it[i - 1, 5]) * \
         ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7])) * 1e-3  # kJ
 
@@ -186,13 +186,13 @@ def suction(i, fluid, z_it, comp, pV, pZyk, pZ):
     step = 3
     W = -z_it[i - 1, 6] * (z_it[i, 2] - z_it[i - 1, 2])  # compression work, kJ
     Wr = pV[5] * (z_it[i, 2] - z_it[i - 1, 2])  # friction work # , kJ
-    getalp(z_it, i, pV)
+    z_it = getalp(z_it, i, pV)
     Q = z_it[i, 13] * z_it[i, 3] * (z_it[i - 1, 12] - z_it[i - 1, 5]) * \
         ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7])) * 1e-3  # kJ
     state_th_Masse(-Q, z_it, i, pV)
 
     m_dot = pZyk[0] / pZ[2] * np.sqrt(
-        2. * (pZ[1] - z_it[i - 1, 6]) * 1000 * pZ[2])  # mass flow leaving cylinder, kg
+        2. * (pZ[1] - z_it[i - 1, 6]) * 1000 * pZ[2])  # mass flow entering cylinder, kg
     dm = m_dot * ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7]))  # pushed out mass, kg
     mi = z_it[i - 1, 11] + dm  # resulting mass in cylinder, kg
     vi = z_it[i, 2] / mi  # resulting specific volume in cylinder, m³/kg
@@ -210,7 +210,7 @@ def suction(i, fluid, z_it, comp, pV, pZyk, pZ):
 
 def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
     # setting of Aeff_i, explicit function
-    M = z_mm(300, 100., fluid, comp)[-1]  # CP.PropsSI("M",fluid) # molar mass kg/mol # AW ramdom inlet conditions, molar mass contant
+    M = z_mm(300, 100., fluid, comp)[-1]  # CP.PropsSI("M",fluid) # molar mass kg/mol # AW ramdom inlet conditions, molar mass constant
     pZyk[0] = 2.0415e-3 * (Rm / M) ** (-.9826) * pV[0] ** 2. / Ver0[
         0] ** 2.  # effective flow cross-section inlet, m²
     # setting of Aeff_o, implicit function relatively to average mass flow density over valve
