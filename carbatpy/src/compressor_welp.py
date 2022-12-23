@@ -63,28 +63,33 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si, m_dot_in, m_dot
     dxdt = -pV[1] / 2 * (np.sin(x) - pV[2] * (0.5 * (1 - (1 / pV[2] * np.sin(x)) ** 2)) ** -0.5 * \
                          (-2 * 1 / pV[2] * np.sin(x)) * 1 / pV[2] * np.cos(x))
     for i in range(0, len(x)):
+        print(i)
         [Ti[i], pi[i], vi[i], y[1], hi[i], si[i]] = z_uv(y[1,i], vi[i], fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
         if x[i] <= np.pi:
             if pi[i] <= pZ[6]:
+                print("compressrion")
                 [alp[i], m_dot_in[i], m_dot_out[i]] = compression(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
             else:
+                print("push out")
                 [alp[i], m_dot_in[i], m_dot_out[i]] = push_out(pV, pos_piston[i], dxdt[i], Ti[i], pi[i], pZ, pZyk, vi[i])
         else:
             if pi[i] >= pZ[1]:
+                print("expansion")
                 [alp[i], m_dot_in[i], m_dot_out[i]] = expansion(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
             else:
+                print("suction")
                 [alp[i], m_dot_in[i], m_dot_out[i]] = suction(pV, pos_piston[i], dxdt[i], Ti[i], pi[i], pZ, pZyk)
 
     dVdt = -np.pi ** 2 * pV[7] * pV[0] ** 2 / 2 * dxdt
     dW_fric = - pV[5] * dVdt
-    dW_rev = -pi * dVdt
+    dW_rev = -np.multiply(pi, dVdt)
 
 
     dQ = alp * ht_surface * (y[2] - Ti)  # kW
-    dthermal_dt = state_th_Masse(y, -Q, pV)
+    dthermal_dt = state_th_Masse(y, -dQ, pV)
     dmdt = m_dot_in - m_dot_out
     dudt = (dQ + dW_fric + dW_rev - dmdt * y[1] + m_dot_out * hi - m_dot_in * pZ[4]) / y[0]  # kJ/kg
-    return np.array([dmdt,dudt, dthermal_dt])
+    return np.array([dmdt, dudt, dthermal_dt])
 
 def getalp(pV, step, dxdt, Ti, pi):
     '''
@@ -96,7 +101,8 @@ def getalp(pV, step, dxdt, Ti, pi):
     else:  # open valves, suction or push out
         k = 5.18
     alp = 127.93 * pV[0] ** (-.2) * (pi * 1e-2) ** .8 * \
-          (Ti) ** (-.55) * (k * dxdt) ** .8
+          (Ti) ** (-.55) * (k * abs(dxdt)) ** .8
+    # TODO check if abs() is ok here
     return alp
 
 def state_th_Masse(y, Q, pV):
@@ -125,7 +131,7 @@ def compression(pV, pos_piston, dxdt, Ti, pi):
 
 def push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi):
     step = 1
-    alp = (pV, step, dxdt, Ti, pi)
+    alp = getalp(pV, step, dxdt, Ti, pi)
     m_dot_out = pZyk[1] / vi * np.sqrt(2. * (pi - pZ[6]) * \
                                                1000. * vi)  # mass flow leaving the cylinder, kg/s
     m_dot_in = 0.
@@ -134,7 +140,7 @@ def push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi):
 
 def expansion(pV, pos_piston, dxdt, Ti, pi):
     step = 2
-    alp = (pV, step, dxdt, Ti, pi)
+    alp = getalp(pV, step, dxdt, Ti, pi)
     m_dot_in = 0.  # no mass flow over boundaries
     m_dot_out = 0.
     return alp, m_dot_in, m_dot_out
@@ -142,7 +148,7 @@ def expansion(pV, pos_piston, dxdt, Ti, pi):
 
 def suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk):
     step = 3
-    alp = (pV, step, dxdt, Ti, pi)
+    alp = getalp(pV, step, dxdt, Ti, pi)
     m_dot_in = pZyk[0] / pZ[2] * np.sqrt(
         2. * (pZ[1] - pi) * 1000 * pZ[2])  # mass flow entering cylinder, kg
     # TODO check formula for m_dot_in and m_dot_out - are not corresponding to Diss
@@ -155,7 +161,7 @@ def bc(ya, yb):
 if __name__ == "__main__":
     p_in = 343
     T_in = 264
-    p_out = 3241
+    p_out = 2922
     fluid = 'Propane * Butane'
     comp = [1.0, 0.]
     resolution = 360

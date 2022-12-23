@@ -313,9 +313,9 @@ def geometry(pV, pZ, z_it, fluid, IS):
     z_it[:, 1] = -(pV[1] / 2. * (1. - np.cos(z_it[:, 0]) + pV[2] *
                                  (1. - np.sqrt(1. - (1. / pV[2] * np.sin(z_it[:, 0])) ** 2.)))) + \
                  pV[4] * pV[1] + pV[1]  # piston position, x=0 bei UT
-    A_kopf = np.pi / 4. * pV[0] ** 2.
-    z_it[:, 2] = A_kopf * z_it[:, 1]  # cylinder volume
-    z_it[:, 3] = np.pi * pV[0] * z_it[:, 1] + 2. * A_kopf  # heat transfer surfaces
+    a_kopf = np.pi / 4. * pV[0] ** 2.
+    z_it[:, 2] = a_kopf * z_it[:, 1]  # cylinder volume
+    z_it[:, 3] = np.pi * pV[0] * z_it[:, 1] + 2. * a_kopf  # heat transfer surfaces
 
 
 # Beispiel #################################################
