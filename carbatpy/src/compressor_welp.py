@@ -16,8 +16,24 @@ Tu = 25. + 273.15  # ambient temperature
 dTK = 273.15  # conversion °C / K
 Ver0 = [34e-3, 34e-3, 2., .04]  # fit-compressor: D, H, cylinder, outer surface
 
-def fun(x,u):
-    a = 2
+def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
+    # initializing pZ vector
+    pZ = np.zeros(7)
+    pZ[0:6] = z_Tp(T_inlet, p_inlet, fluid,
+                   comp)  # fl.zs_kg(['T','p'],[T_e,p_e],['T','p','v','u','h','s'],fluid) #state suction pipe
+    pZ[6] = p_outlet  # pressure in pressure pipe
+    # initializing pV vector
+    pV = [34e-3, 34e-3, 3.5, .04, .06071, 48.916, 50., 50. / 2., 2.]  # parameter see above
+    cycle_pos_var = np.linspace(0., 2 * np.pi, resolution)
+    a_head = np.pi / 4. * pV[0] ** 2.  # area of cylinder head
+
+def fun(x, u, pV, a_head, fluid, comp):
+    pos_piston = -(pV[1] / 2. * (1. - np.cos(x) + pV[2] *
+                    (1. - np.sqrt(1. - (1. / pV[2] * np.sin(x)) ** 2.)))) + pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
+    volume_cylinder = a_head * pos_piston  # volume cylinder
+    ht_surface = np.pi * pV[0] * pos_piston + 2. * a_head  # heat transfer surfaces
+    vi = volume_cylinder / mi  # specific volume in cylinder, m³/kg
+    zi = z_uv(u[1], vi, fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
     return np.array([u[1],a * u[1]-x**2])
 
 def bc(ya, yb):
