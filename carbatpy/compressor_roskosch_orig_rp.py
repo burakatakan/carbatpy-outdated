@@ -279,7 +279,7 @@ def getETA(T_e, p_e, p_a, fluid_in, comp, pV, pZ, z_it, IS, pZyk, IS0):
     fluid = fluid_in
     comp = comp
 
-    ###############################     Parametersatz spezifisch für Verdichter   ###################################
+    ###############################     parameter set specific for compressor   ###################################
 
     pV = [34e-3, 34e-3, 3.5, .04, .06071, 48.916, 50., 50. / 2., 2.]  # parameter see above
 
