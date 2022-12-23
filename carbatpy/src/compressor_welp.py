@@ -35,33 +35,47 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     # setting of Aeff_o, implicit function relatively to average mass flow density over valve
     # at 1st iteration, the mass flow density is unknown, typical value is guessed
     Aeff_o = 1.5e-5 * pV[0] ** 2. / Ver0[0] ** 2.
+    pZyk = np.zeros(2)
+    pZyk[0] = Aeff_i
+    pZyk[1] = Aeff_o
+    x_var = np.linspace(0, 2 * np.pi, resolution)
+    y_start = np.zeros([3, len(x_var)])
+    y_start[0, :] = Ver0[1] * a_head / pZ[2]
+    y_start[1, :] = pZ[3]
+    y_start[2, :] = 0.5 * (Tu + pZ[0])
+    Ti = np.zeros(len(x_var))
+    pi = np.zeros(len(x_var))
+    hi = np.zeros(len(x_var))
+    si = np.zeros(len(x_var))
+    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si), bc, x_var, y_start)
+    return res
 
 
-    # print(pZyk)
-
-
-def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
+def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si):
     pos_piston = -(pV[1] / 2. * (1. - np.cos(x) + pV[2] *
                     (1. - np.sqrt(1. - (1. / pV[2] * np.sin(x)) ** 2.)))) + pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
     volume_cylinder = a_head * pos_piston  # volume cylinder
     ht_surface = np.pi * pV[0] * pos_piston + 2. * a_head  # heat transfer surfaces
     vi = volume_cylinder / y[0]  # specific volume in cylinder, m³/kg
-    [Ti, pi, vi, y[1], hi, si] = z_uv(y[1], vi, fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
-    dxdt = -pV[1] / 2 * (np.sin(x) - pV[2] * (0.5 * (1 - (1 / pV[2] * np.sin(x)) ** 2))**-0.5 * \
-           (-2 * 1 / pV[2] * np.sin(x)) * 1 / pV[2] * np.cos(x))
-    dVdt = -np.pi ** 2 * pZ[7] * pV[0] ** 2 / 2 * dxdt
+    dxdt = -pV[1] / 2 * (np.sin(x) - pV[2] * (0.5 * (1 - (1 / pV[2] * np.sin(x)) ** 2)) ** -0.5 * \
+                         (-2 * 1 / pV[2] * np.sin(x)) * 1 / pV[2] * np.cos(x))
+    for i in range(0, len(x)):
+        [Ti[i], pi[i], vi[i], y[1], hi[i], si[i]] = z_uv(y[1,i], vi[i], fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
+        if x[i] <= np.pi:
+            if pi[i] <= pZ[6]:
+                [alp, m_dot_in, m_dot_out] = compression(pV, pos_piston, dxdt, Ti, pi)
+            else:
+                [alp, m_dot_in, m_dot_out] = push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
+        else:
+            if pi[i] >= pZ[1]:
+                [alp, m_dot_in, m_dot_out] = expansion(pV, pos_piston, dxdt, Ti, pi)
+            else:
+                [alp, m_dot_in, m_dot_out] = suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
+
+    dVdt = -np.pi ** 2 * pV[7] * pV[0] ** 2 / 2 * dxdt
     dW_fric = - pV[5] * dVdt
     dW_rev = -pi * dVdt
-    if x <= np.pi:
-        if pi <= pZ[6]:
-            [alp, m_dot_in, m_dot_out] = compression(pV, pos_piston, dxdt, Ti, pi)
-        else:
-            [alp, m_dot_in, m_dot_out] = push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
-    else:
-        if pi >= pZ[1]:
-            z_it = expansion(pV, pos_piston, dxdt, Ti, pi)
-        else:
-            z_it = suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
+
 
     dQ = alp * ht_surface * (y[2] - Ti)  # kW
     dthermal_dt = state_th_Masse(y, -Q, pV)
@@ -109,6 +123,7 @@ def compression(pV, pos_piston, dxdt, Ti, pi):
 def push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi):
     step = 1
     alp = (pV, step, pos_piston, dxdt, Ti, pi)
+    print(pZyk)
     m_dot_out = pZyk[1] / vi * np.sqrt(2. * (pi - pZ[6]) * \
                                                1000. * vi)  # mass flow leaving the cylinder, kg/s
     m_dot_in = 0.
@@ -123,7 +138,7 @@ def expansion(pV, pos_piston, dxdt, Ti, pi):
     return alp, m_dot_in, m_dot_out
 
 
-def suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
+def suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk):
     step = 3
     alp = (pV, step, pos_piston, dxdt, Ti, pi)
     m_dot_in = pZyk[0] / pZ[2] * np.sqrt(
@@ -134,9 +149,15 @@ def suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
 def bc(ya, yb):
     return np.array([yb[0] - ya[0], yb[1] - ya[1], yb[2] - ya[2]])
 
+if __name__ == "__main__":
+    p_in = 200
+    T_in = 390
+    p_out = 400
+    fluid = 'Propane * Butane'
+    comp = [1.0, 0.]
+    resolution = 360
+    result = set_up(T_in, p_in, p_out, fluid, comp, resolution)
 
-x_var = np.linspace(0,10,100)
-y_guess = np.ones([2,len(x_var)])
-res = solve_bvp(fun, bc, x_var, y_guess)
-plt.plot(x_var, res.y[1])
-plt.show()
+
+    plt.plot(np.linspace(0, 2* np.pi, resolution), result.y[1])
+    plt.show()
