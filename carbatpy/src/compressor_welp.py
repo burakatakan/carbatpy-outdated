@@ -55,7 +55,7 @@ def fun(x, y, pV, a_head, fluid, comp, pZ):
         if pi <= pZ[6]:
             [alp, m_dot_in, m_dot_out] = compression(pV, pos_piston, dxdt, Ti, pi)
         else:
-            z_it = push_out(i, fluid, z_it, comp, pV, pZyk, pZ)
+            [alp, m_dot_in, m_dot_out] = push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
     else:
         if pi >= pZ[1]:
             z_it = expansion(i, fluid, z_it, comp, pV)
@@ -104,75 +104,30 @@ def compression(pV, pos_piston, dxdt, Ti, pi):
     return alp, m_dot_in, m_dot_out
 
 
-def push_out(i, fluid, z_it, comp, pV, pZyk, pZ):
+def push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi):
     step = 1
-    alp = getalp(pV, step, pos_piston, dxdt, Ti, pi)
-    Q = z_it[i, 13] * z_it[i, 3] * (z_it[i - 1, 12] - z_it[i - 1, 5]) * \
-        ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7])) * 1e-3  # kJ
-    z_it = state_th_Masse(-Q, z_it, i, pV)
-    m_dot = pZyk[1] / z_it[i - 1, 7] * np.sqrt(2. * (z_it[i - 1, 6] - pZ[6]) * \
-                                               1000. * z_it[i - 1, 7])  # mass flow leaving the cylinder, kg/s
-    dm = m_dot * ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7]))
-    # pushed out mass, kg
-    mi = z_it[i - 1, 11] - dm  # resulting mass in cylinder, kg
-    vi = z_it[i, 2] / mi  # resulting specific volume in cylinder, m³/kg
-    ui = (Q + W + Wr - dm * z_it[i - 1, 9] + z_it[i - 1, 11] * z_it[i - 1, 8]) / mi
-    # energy balance, resulting internal energy in cylinder, kj/kg
-    # property call for state i with u and v
-    zi = z_uv(ui, vi, fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
-
-    # store of quantities in z_it
-    z_it[i, 4] = step
-    z_it[i, 5:11] = zi
-    z_it[i, 11] = mi
-    z_it[i, 14:16] = dm, Q
-    return z_it
+    alp = (pV, step, pos_piston, dxdt, Ti, pi)
+    m_dot_out = pZyk[1] / vi * np.sqrt(2. * (pi - pZ[6]) * \
+                                               1000. * vi)  # mass flow leaving the cylinder, kg/s
+    m_dot_in = 0.
+    return alp, m_dot_in, m_dot_out
 
 
-def expansion(i, fluid, z_it, comp, pV):
+def expansion(pV, pos_piston, dxdt, Ti, pi):
     step = 2
-    alp = getalp(pV, step, pos_piston, dxdt, Ti, pi)
-    Q = z_it[i, 13] * z_it[i, 3] * (z_it[i - 1, 12] - z_it[i - 1, 5]) * \
-        ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7])) * 1e-3  # kJ
-
-    state_th_Masse(-Q, z_it, i, pV)
-    dm = 0.  # no mass flow over boundaries
-    mi = z_it[i - 1, 11]  # mass in cylinder, kg
-    ui = (Q + W + Wr) / z_it[i - 1, 11] + z_it[i - 1, 8]  # energy balance
-    vi = z_it[i, 2] / mi  # resulting specific volume in cylinder, m³/kg
-    # property call for state i with u and v
-    zi = z_uv(ui, vi, fluid, comp)  # zi=fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
-
-    # store of quantities in z_it
-    z_it[i, 4] = step
-    z_it[i, 5:11] = zi
-    z_it[i, 11] = mi
-    z_it[i, 14:16] = dm, Q
-    return z_it
+    alp = (pV, step, pos_piston, dxdt, Ti, pi)
+    m_dot_in = 0.  # no mass flow over boundaries
+    m_dot_out = 0.
+    return alp, m_dot_in, m_dot_out
 
 
-def suction(i, fluid, z_it, comp, pV, pZyk, pZ):
+def suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
     step = 3
-    alp = getalp(pV, step, pos_piston, dxdt, Ti, pi)
-    Q = z_it[i, 13] * z_it[i, 3] * (z_it[i - 1, 12] - z_it[i - 1, 5]) * \
-        ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7])) * 1e-3  # kJ
-    state_th_Masse(-Q, z_it, i, pV)
-
-    m_dot = pZyk[0] / pZ[2] * np.sqrt(
-        2. * (pZ[1] - z_it[i - 1, 6]) * 1000 * pZ[2])  # mass flow leaving cylinder, kg
-    dm = m_dot * ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7]))  # pushed out mass, kg
-    mi = z_it[i - 1, 11] + dm  # resulting mass in cylinder, kg
-    vi = z_it[i, 2] / mi  # resulting specific volume in cylinder, m³/kg
-    ui = (Q + W + Wr + dm * pZ[4] + z_it[i - 1, 11] * z_it[i - 1, 8]) / mi  # isenthalpic throttling to cylinder
-                                                                            # pressure
-    # property call for state i with u and v
-    zi = z_uv(ui, vi, fluid, comp)  # zi=fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
-    # store of quantities in z_it
-    z_it[i, 4] = step
-    z_it[i, 5: 11] = zi
-    z_it[i, 11] = mi
-    z_it[i, 14:16] = dm, Q
-    return z_it
+    alp = (pV, step, pos_piston, dxdt, Ti, pi)
+    m_dot_in = pZyk[0] / pZ[2] * np.sqrt(
+        2. * (pZ[1] - pi) * 1000 * pZ[2])  # mass flow entering cylinder, kg
+    m_dot_out = 0
+    return alp, m_dot_in, m_dot_out
 
 def bc(ya, yb):
     return np.array([yb[1] - ya[1], ya[0]])
