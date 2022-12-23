@@ -47,11 +47,14 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     pi = np.zeros(len(x_var))
     hi = np.zeros(len(x_var))
     si = np.zeros(len(x_var))
-    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si), bc, x_var, y_start)
+    m_dot_in = np.zeros(len(x_var))
+    m_dot_out = np.zeros(len(x_var))
+    alp = np.zeros(len(x_var))
+    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si, m_dot_in, m_dot_out, alp), bc, x_var, y_start)
     return res
 
 
-def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si):
+def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si, m_dot_in, m_dot_out, alp):
     pos_piston = -(pV[1] / 2. * (1. - np.cos(x) + pV[2] *
                     (1. - np.sqrt(1. - (1. / pV[2] * np.sin(x)) ** 2.)))) + pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
     volume_cylinder = a_head * pos_piston  # volume cylinder
@@ -63,14 +66,14 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si):
         [Ti[i], pi[i], vi[i], y[1], hi[i], si[i]] = z_uv(y[1,i], vi[i], fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
         if x[i] <= np.pi:
             if pi[i] <= pZ[6]:
-                [alp, m_dot_in, m_dot_out] = compression(pV, pos_piston, dxdt, Ti, pi)
+                [alp[i], m_dot_in[i], m_dot_out[i]] = compression(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
             else:
-                [alp, m_dot_in, m_dot_out] = push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
+                [alp[i], m_dot_in[i], m_dot_out[i]] = push_out(pV, pos_piston[i], dxdt[i], Ti[i], pi[i], pZ, pZyk, vi[i])
         else:
             if pi[i] >= pZ[1]:
-                [alp, m_dot_in, m_dot_out] = expansion(pV, pos_piston, dxdt, Ti, pi)
+                [alp[i], m_dot_in[i], m_dot_out[i]] = expansion(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
             else:
-                [alp, m_dot_in, m_dot_out] = suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
+                [alp[i], m_dot_in[i], m_dot_out[i]] = suction(pV, pos_piston[i], dxdt[i], Ti[i], pi[i], pZ, pZyk)
 
     dVdt = -np.pi ** 2 * pV[7] * pV[0] ** 2 / 2 * dxdt
     dW_fric = - pV[5] * dVdt
@@ -83,7 +86,7 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si):
     dudt = (dQ + dW_fric + dW_rev - dmdt * y[1] + m_dot_out * hi - m_dot_in * pZ[4]) / y[0]  # kJ/kg
     return np.array([dmdt,dudt, dthermal_dt])
 
-def getalp(pV, step, pos_piston, dxdt, Ti, pi):
+def getalp(pV, step, dxdt, Ti, pi):
     '''
     calculates heat transfer coefficient gas/cylinder wall
     Woschni correlation
@@ -114,7 +117,7 @@ def state_th_Masse(y, Q, pV):
 
 def compression(pV, pos_piston, dxdt, Ti, pi):
     step = 0
-    alp = (pV, step, pos_piston, dxdt, Ti, pi)
+    alp = getalp(pV, step, dxdt, Ti, pi)
     m_dot_in = 0.  # no mass flow over boundaries
     m_dot_out = 0.
     return alp, m_dot_in, m_dot_out
@@ -122,8 +125,7 @@ def compression(pV, pos_piston, dxdt, Ti, pi):
 
 def push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi):
     step = 1
-    alp = (pV, step, pos_piston, dxdt, Ti, pi)
-    print(pZyk)
+    alp = (pV, step, dxdt, Ti, pi)
     m_dot_out = pZyk[1] / vi * np.sqrt(2. * (pi - pZ[6]) * \
                                                1000. * vi)  # mass flow leaving the cylinder, kg/s
     m_dot_in = 0.
@@ -132,7 +134,7 @@ def push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi):
 
 def expansion(pV, pos_piston, dxdt, Ti, pi):
     step = 2
-    alp = (pV, step, pos_piston, dxdt, Ti, pi)
+    alp = (pV, step, dxdt, Ti, pi)
     m_dot_in = 0.  # no mass flow over boundaries
     m_dot_out = 0.
     return alp, m_dot_in, m_dot_out
@@ -140,9 +142,10 @@ def expansion(pV, pos_piston, dxdt, Ti, pi):
 
 def suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk):
     step = 3
-    alp = (pV, step, pos_piston, dxdt, Ti, pi)
+    alp = (pV, step, dxdt, Ti, pi)
     m_dot_in = pZyk[0] / pZ[2] * np.sqrt(
         2. * (pZ[1] - pi) * 1000 * pZ[2])  # mass flow entering cylinder, kg
+    # TODO check formula for m_dot_in and m_dot_out - are not corresponding to Diss
     m_dot_out = 0
     return alp, m_dot_in, m_dot_out
 
@@ -150,9 +153,9 @@ def bc(ya, yb):
     return np.array([yb[0] - ya[0], yb[1] - ya[1], yb[2] - ya[2]])
 
 if __name__ == "__main__":
-    p_in = 200
-    T_in = 390
-    p_out = 400
+    p_in = 343
+    T_in = 264
+    p_out = 3241
     fluid = 'Propane * Butane'
     comp = [1.0, 0.]
     resolution = 360
