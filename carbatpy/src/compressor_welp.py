@@ -43,52 +43,62 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     y_start[0, :] = Ver0[1] * a_head / pZ[2]
     y_start[1, :] = pZ[3]
     y_start[2, :] = 0.5 * (Tu + pZ[0])
-    Ti = np.zeros(len(x_var))
-    pi = np.zeros(len(x_var))
-    hi = np.zeros(len(x_var))
-    si = np.zeros(len(x_var))
-    m_dot_in = np.zeros(len(x_var))
-    m_dot_out = np.zeros(len(x_var))
-    alp = np.zeros(len(x_var))
-    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si, m_dot_in, m_dot_out, alp), bc, x_var, y_start)
+    #Ti = np.zeros(len(x_var))
+    #pi = np.zeros(len(x_var))
+    #hi = np.zeros(len(x_var))
+    #si = np.zeros(len(x_var))
+    #m_dot_in = np.zeros(len(x_var))
+    #m_dot_out = np.zeros(len(x_var))
+    #alp = np.zeros(len(x_var))
+    #Ti, pi, hi, si, m_dot_in, m_dot_out, alp
+    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk), bc, x_var, y_start)
     return res
 
+def initializatiion(x_length):
+    si = np.zeros(x_length)
+    Ti = np.zeros(x_length)
+    alp = np.zeros(x_length)
+    hi = np.zeros(x_length)
+    m_dot_in = np.zeros(x_length)
+    m_dot_out = np.zeros(x_length)
+    pi = np.zeros(x_length)
+    return si, Ti, alp, hi, m_dot_in, m_dot_out, pi
 
-def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk, Ti, pi, hi, si, m_dot_in, m_dot_out, alp):
+def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
+    si, Ti, alp, hi, m_dot_in, m_dot_out, pi = initializatiion(len(x))
+    for i in range(0, len(x)):
+        if y[0, i] < 0:
+            y[0, i] = 2.32868e-4
     pos_piston = -(pV[1] / 2. * (1. - np.cos(x) + pV[2] *
                     (1. - np.sqrt(1. - (1. / pV[2] * np.sin(x)) ** 2.)))) + pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
     volume_cylinder = a_head * pos_piston  # volume cylinder
     ht_surface = np.pi * pV[0] * pos_piston + 2. * a_head  # heat transfer surfaces
     vi = volume_cylinder / y[0]  # specific volume in cylinder, m³/kg
-    dxdt = -pV[1] / 2 * (np.sin(x) - pV[2] * (0.5 * (1 - (1 / pV[2] * np.sin(x)) ** 2)) ** -0.5 * \
-                         (-2 * 1 / pV[2] * np.sin(x)) * 1 / pV[2] * np.cos(x))
+    dxdt = -pV[1] / 2 * np.sin(x) * (1 + 1/pV[2] * np.cos(x) * (1 - (1/pV[2] * np.sin(x))**2)**-0.5)
     for i in range(0, len(x)):
-        print(i)
         [Ti[i], pi[i], vi[i], y[1], hi[i], si[i]] = z_uv(y[1,i], vi[i], fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
+        if Ti[i] == -9999990.:
+            raise ValueError("invalid properties")
         if x[i] <= np.pi:
             if pi[i] <= pZ[6]:
-                print("compressrion")
                 [alp[i], m_dot_in[i], m_dot_out[i]] = compression(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
             else:
-                print("push out")
                 [alp[i], m_dot_in[i], m_dot_out[i]] = push_out(pV, pos_piston[i], dxdt[i], Ti[i], pi[i], pZ, pZyk, vi[i])
         else:
             if pi[i] >= pZ[1]:
-                print("expansion")
                 [alp[i], m_dot_in[i], m_dot_out[i]] = expansion(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
             else:
-                print("suction")
                 [alp[i], m_dot_in[i], m_dot_out[i]] = suction(pV, pos_piston[i], dxdt[i], Ti[i], pi[i], pZ, pZyk)
 
-    dVdt = -np.pi ** 2 * pV[7] * pV[0] ** 2 / 2 * dxdt
+    dVdt = np.pi ** 2 * pV[7] * pV[0] ** 2 / 2 * dxdt
     dW_fric = - pV[5] * dVdt
     dW_rev = -np.multiply(pi, dVdt)
 
 
-    dQ = alp * ht_surface * (y[2] - Ti)  # kW
+    dQ = alp * ht_surface * (y[2] - Ti) *1e-3 # kW
     dthermal_dt = state_th_Masse(y, -dQ, pV)
     dmdt = m_dot_in - m_dot_out
-    dudt = (dQ + dW_fric + dW_rev - dmdt * y[1] + m_dot_out * hi - m_dot_in * pZ[4]) / y[0]  # kJ/kg
+    dudt = (dQ + dW_fric + dW_rev - dmdt * y[1] - m_dot_out * hi + m_dot_in * pZ[4]) / y[0]  # kJ/kg
     return np.array([dmdt, dudt, dthermal_dt])
 
 def getalp(pV, step, dxdt, Ti, pi):
@@ -100,8 +110,7 @@ def getalp(pV, step, dxdt, Ti, pi):
         k = 2.28
     else:  # open valves, suction or push out
         k = 5.18
-    alp = 127.93 * pV[0] ** (-.2) * (pi * 1e-2) ** .8 * \
-          (Ti) ** (-.55) * (k * abs(dxdt)) ** .8
+    alp = 127.93 * pV[0] ** (-.2) * (pi * 1e-2) ** .8 * (Ti) ** (-.55) * (k * abs(dxdt)) ** .8
     # TODO check if abs() is ok here
     return alp
 
@@ -117,8 +126,8 @@ def state_th_Masse(y, Q, pV):
     alp_a = 6.  # heat transfer coefficient to environment
     A = Ver0[3] * pV[8] / Ver0[2] * pV[0] / Ver0[0] * pV[1] / Ver0[
         1]  # Outer surface cylinder estimated via geometry related to fitting compressor
-    Q_u = alp_a * A * (Tu - y[2]) # kW
-    dthermal_dt = (Q + Q_u) / cv / y[0]
+    Q_u = alp_a * A * (Tu - y[2]) * 1e-3 # kW
+    dthermal_dt = (-Q + Q_u) / cv / m
     return dthermal_dt
 
 def compression(pV, pos_piston, dxdt, Ti, pi):
