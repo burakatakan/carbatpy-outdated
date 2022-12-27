@@ -68,34 +68,44 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
     si, Ti, alp, hi, m_dot_in, m_dot_out, pi = initializatiion(len(x))
     for i in range(0, len(x)):
         if y[0, i] < 0:
-            y[0, i] = 2.32868e-4
+            y[0, i] = 0.0002
+        if y[0, i] > 0.0003:
+            y[0, i] = 0.0002
+
+        if y[2, i] < 0:
+            y[2, i] = Tu
+        if y[2, i] > 700:
+            y[2, i] = 500
     pos_piston = -(pV[1] / 2. * (1. - np.cos(x) + pV[2] *
                     (1. - np.sqrt(1. - (1. / pV[2] * np.sin(x)) ** 2.)))) + pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
     volume_cylinder = a_head * pos_piston  # volume cylinder
     ht_surface = np.pi * pV[0] * pos_piston + 2. * a_head  # heat transfer surfaces
     vi = volume_cylinder / y[0]  # specific volume in cylinder, m³/kg
     dxdt = -pV[1] / 2 * np.sin(x) * (1 + 1/pV[2] * np.cos(x) * (1 - (1/pV[2] * np.sin(x))**2)**-0.5)
+    dVdt = np.pi ** 2 * pV[7] * pV[0] ** 2 / 2 * dxdt
     for i in range(0, len(x)):
         [Ti[i], pi[i], vi[i], y[1], hi[i], si[i]] = z_uv(y[1,i], vi[i], fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
         if Ti[i] == -9999990.:
             raise ValueError("invalid properties")
         if x[i] <= np.pi:
+            dW_fric = - pV[5] * dVdt
             if pi[i] <= pZ[6]:
                 [alp[i], m_dot_in[i], m_dot_out[i]] = compression(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
             else:
                 [alp[i], m_dot_in[i], m_dot_out[i]] = push_out(pV, pos_piston[i], dxdt[i], Ti[i], pi[i], pZ, pZyk, vi[i])
         else:
+            dW_fric = pV[5] * dVdt
             if pi[i] >= pZ[1]:
                 [alp[i], m_dot_in[i], m_dot_out[i]] = expansion(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
             else:
                 [alp[i], m_dot_in[i], m_dot_out[i]] = suction(pV, pos_piston[i], dxdt[i], Ti[i], pi[i], pZ, pZyk)
 
-    dVdt = np.pi ** 2 * pV[7] * pV[0] ** 2 / 2 * dxdt
-    dW_fric = - pV[5] * dVdt
+
+
     dW_rev = -np.multiply(pi, dVdt)
 
 
-    dQ = alp * ht_surface * (y[2] - Ti) *1e-3 # kW
+    dQ = alp * ht_surface * (y[2] - Ti) * 1e-3 # kW
     dthermal_dt = state_th_Masse(y, -dQ, pV)
     dmdt = m_dot_in - m_dot_out
     dudt = (dQ + dW_fric + dW_rev - dmdt * y[1] - m_dot_out * hi + m_dot_in * pZ[4]) / y[0]  # kJ/kg
