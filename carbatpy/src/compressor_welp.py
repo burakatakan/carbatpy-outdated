@@ -54,7 +54,7 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk), bc, x_var, y_start)
     return res
 
-def initializatiion(x_length):
+def initialization(x_length):
     si = np.zeros(x_length)
     Ti = np.zeros(x_length)
     alp = np.zeros(x_length)
@@ -65,7 +65,7 @@ def initializatiion(x_length):
     return si, Ti, alp, hi, m_dot_in, m_dot_out, pi
 
 def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
-    si, Ti, alp, hi, m_dot_in, m_dot_out, pi = initializatiion(len(x))
+    si, Ti, alp, hi, m_dot_in, m_dot_out, pi = initialization(len(x))
     for i in range(0, len(x)):
         if y[0, i] < 0:
             y[0, i] = 0.0002
@@ -74,15 +74,15 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
 
         if y[2, i] < 0:
             y[2, i] = Tu
-        if y[2, i] > 700:
-            y[2, i] = 500
+
     pos_piston = -(pV[1] / 2. * (1. - np.cos(x) + pV[2] *
                     (1. - np.sqrt(1. - (1. / pV[2] * np.sin(x)) ** 2.)))) + pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
     volume_cylinder = a_head * pos_piston  # volume cylinder
     ht_surface = np.pi * pV[0] * pos_piston + 2. * a_head  # heat transfer surfaces
     vi = volume_cylinder / y[0]  # specific volume in cylinder, m³/kg
     dxdt = -pV[1] / 2 * np.sin(x) * (1 + 1/pV[2] * np.cos(x) * (1 - (1/pV[2] * np.sin(x))**2)**-0.5)
-    dVdt = np.pi ** 2 * pV[7] * pV[0] ** 2 / 2 * dxdt
+    # TODO check formula with wolfram alpha
+    dVdt = np.pi ** 2 * pV[7] * pV[0] ** 2 / 4 * dxdt
     for i in range(0, len(x)):
         [Ti[i], pi[i], vi[i], y[1], hi[i], si[i]] = z_uv(y[1,i], vi[i], fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
         if Ti[i] == -9999990.:
@@ -93,6 +93,8 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
                 [alp[i], m_dot_in[i], m_dot_out[i]] = compression(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
             else:
                 [alp[i], m_dot_in[i], m_dot_out[i]] = push_out(pV, pos_piston[i], dxdt[i], Ti[i], pi[i], pZ, pZyk, vi[i])
+                mass_flow_density = m_dot_out[i] / pZyk[1]
+                pZyk[1] = 5.1109e-4 * mass_flow_density ** -.486 * pV[0] ** 2 / Ver0[0] ** 2  # Aeff_o neu
         else:
             dW_fric = pV[5] * dVdt
             if pi[i] >= pZ[1]:
@@ -103,6 +105,7 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
 
 
     dW_rev = -np.multiply(pi, dVdt)
+
 
 
     dQ = alp * ht_surface * (y[2] - Ti) * 1e-3 # kW
@@ -121,7 +124,6 @@ def getalp(pV, step, dxdt, Ti, pi):
     else:  # open valves, suction or push out
         k = 5.18
     alp = 127.93 * pV[0] ** (-.2) * (pi * 1e-2) ** .8 * (Ti) ** (-.55) * (k * abs(dxdt)) ** .8
-    # TODO check if abs() is ok here
     return alp
 
 def state_th_Masse(y, Q, pV):
@@ -131,7 +133,7 @@ def state_th_Masse(y, Q, pV):
     '''
     ### mass and cv of thermal mass are in stationary state not crucial,
     ### parameter are chosen to achieve fast convergence without vibrations
-    m = .0001  # kg
+    m = .01  # kg
     cv = .502  # kJ/kg/K
     alp_a = 6.  # heat transfer coefficient to environment
     A = Ver0[3] * pV[8] / Ver0[2] * pV[0] / Ver0[0] * pV[1] / Ver0[
@@ -170,7 +172,6 @@ def suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk):
     alp = getalp(pV, step, dxdt, Ti, pi)
     m_dot_in = pZyk[0] / pZ[2] * np.sqrt(
         2. * (pZ[1] - pi) * 1000 * pZ[2])  # mass flow entering cylinder, kg
-    # TODO check formula for m_dot_in and m_dot_out - are not corresponding to Diss
     m_dot_out = 0
     return alp, m_dot_in, m_dot_out
 
@@ -180,12 +181,12 @@ def bc(ya, yb):
 if __name__ == "__main__":
     p_in = 343
     T_in = 264
-    p_out = 2922
+    p_out = 3241
     fluid = 'Propane * Butane'
     comp = [1.0, 0.]
     resolution = 360
     result = set_up(T_in, p_in, p_out, fluid, comp, resolution)
 
-
+    print(result.message)
     plt.plot(np.linspace(0, 2* np.pi, resolution), result.y[1])
     plt.show()
