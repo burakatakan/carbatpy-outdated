@@ -40,9 +40,9 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     pZyk[1] = Aeff_o
     x_var = np.linspace(0, 2 * np.pi, resolution)
     y_start = np.zeros([3, len(x_var)])
-    y_start[0, :] = Ver0[1] * a_head / pZ[2]
-    y_start[1, :] = pZ[3]
-    y_start[2, :] = 0.5 * (Tu + pZ[0])
+    y_start[0, :] = 0.00019    #Ver0[1] * a_head / pZ[2]
+    y_start[1, :] = 570.74            #pZ[3]
+    y_start[2, :] = 321.91                #0.5 * (Tu + pZ[0])
     #Ti = np.zeros(len(x_var))
     #pi = np.zeros(len(x_var))
     #hi = np.zeros(len(x_var))
@@ -51,7 +51,7 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     #m_dot_out = np.zeros(len(x_var))
     #alp = np.zeros(len(x_var))
     #Ti, pi, hi, si, m_dot_in, m_dot_out, alp
-    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk), bc, x_var, y_start)
+    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk), bc, x_var, y_start, tol=0.01)
     return res
 
 def initialization(x_length):
@@ -80,9 +80,9 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
     volume_cylinder = a_head * pos_piston  # volume cylinder
     ht_surface = np.pi * pV[0] * pos_piston + 2. * a_head  # heat transfer surfaces
     vi = volume_cylinder / y[0]  # specific volume in cylinder, m³/kg
-    dxdt = -pV[1] / 2 * np.sin(x) * (1 + 1/pV[2] * np.cos(x) * (1 - (1/pV[2] * np.sin(x))**2)**-0.5)
-    # TODO check formula with wolfram alpha
-    dVdt = np.pi ** 2 * pV[7] * pV[0] ** 2 / 4 * dxdt
+    dxdtheta = -pV[1] / 2 * np.sin(x) * (1 + 1/pV[2] * np.cos(x) * (1 - (1/pV[2] * np.sin(x))**2)**-0.5)
+    dxdt = 1 / (2 * np.pi * pV[7]) * dxdtheta
+    dVdt = a_head * dxdt
     for i in range(0, len(x)):
         [Ti[i], pi[i], vi[i], y[1], hi[i], si[i]] = z_uv(y[1,i], vi[i], fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
         if Ti[i] == -9999990.:
@@ -105,13 +105,19 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
 
 
     dW_rev = -np.multiply(pi, dVdt)
-
-
+    stepwidth = x[1] - x[0]
+    #print(f"m_aus {sum(m_dot_out)*stepwidth / (2 * np.pi * pV[7])}")
+    #print(f"m_in {sum(m_dot_in)*stepwidth / (2 * np.pi * pV[7])}")
+    m_dot_in = m_dot_in * stepwidth / (2 * np.pi * pV[7]) /10
+    m_dot_out = m_dot_out * stepwidth / (2 * np.pi * pV[7]) /10
 
     dQ = alp * ht_surface * (y[2] - Ti) * 1e-3 # kW
     dthermal_dt = state_th_Masse(y, -dQ, pV)
     dmdt = m_dot_in - m_dot_out
     dudt = (dQ + dW_fric + dW_rev - dmdt * y[1] - m_dot_out * hi + m_dot_in * pZ[4]) / y[0]  # kJ/kg
+    plt.figure(1)
+    plt.plot(x,dudt)
+    plt.show()
     return np.array([dmdt, dudt, dthermal_dt])
 
 def getalp(pV, step, dxdt, Ti, pi):
@@ -179,14 +185,14 @@ def bc(ya, yb):
     return np.array([yb[0] - ya[0], yb[1] - ya[1], yb[2] - ya[2]])
 
 if __name__ == "__main__":
-    p_in = 343
-    T_in = 264
-    p_out = 3241
     fluid = 'Propane * Butane'
     comp = [1.0, 0.]
+    p_in = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
+    p_out = z_Tx(355, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
+    T_in = 9.5 + 273.15
     resolution = 360
     result = set_up(T_in, p_in, p_out, fluid, comp, resolution)
 
     print(result.message)
-    plt.plot(np.linspace(0, 2* np.pi, resolution), result.y[1])
+    #plt.plot(np.linspace(0, 2* np.pi, resolution), result.y[1])
     plt.show()
