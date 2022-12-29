@@ -41,8 +41,8 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     x_var = np.linspace(0, 2 * np.pi, resolution)
     y_start = np.zeros([3, len(x_var)])
     y_start[0, :] = 0.00019    #Ver0[1] * a_head / pZ[2]
-    y_start[1, :] = 570.74            #pZ[3]
-    y_start[2, :] = 321.91                #0.5 * (Tu + pZ[0])
+    y_start[1, :] = 570.74+20           #pZ[3]
+    y_start[2, :] = 321.91+x_var                #0.5 * (Tu + pZ[0])
     #Ti = np.zeros(len(x_var))
     #pi = np.zeros(len(x_var))
     #hi = np.zeros(len(x_var))
@@ -51,7 +51,7 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     #m_dot_out = np.zeros(len(x_var))
     #alp = np.zeros(len(x_var))
     #Ti, pi, hi, si, m_dot_in, m_dot_out, alp
-    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk), bc, x_var, y_start, tol=0.01)
+    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk), bc, x_var, y_start, tol=0.01, bc_tol=0.1)
     return res
 
 def initialization(x_length):
@@ -62,10 +62,11 @@ def initialization(x_length):
     m_dot_in = np.zeros(x_length)
     m_dot_out = np.zeros(x_length)
     pi = np.zeros(x_length)
-    return si, Ti, alp, hi, m_dot_in, m_dot_out, pi
+    ui = np.zeros(x_length)
+    return si, Ti, alp, hi, m_dot_in, m_dot_out, pi, ui
 
 def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
-    si, Ti, alp, hi, m_dot_in, m_dot_out, pi = initialization(len(x))
+    si, Ti, alp, hi, m_dot_in, m_dot_out, pi, ui = initialization(len(x))
     for i in range(0, len(x)):
         if y[0, i] < 0:
             y[0, i] = 0.0002
@@ -81,10 +82,10 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
     ht_surface = np.pi * pV[0] * pos_piston + 2. * a_head  # heat transfer surfaces
     vi = volume_cylinder / y[0]  # specific volume in cylinder, m³/kg
     dxdtheta = -pV[1] / 2 * np.sin(x) * (1 + 1/pV[2] * np.cos(x) * (1 - (1/pV[2] * np.sin(x))**2)**-0.5)
-    dxdt = 1 / (2 * np.pi * pV[7]) * dxdtheta
+    dxdt = (2 * np.pi * pV[7]) * dxdtheta
     dVdt = a_head * dxdt
     for i in range(0, len(x)):
-        [Ti[i], pi[i], vi[i], y[1], hi[i], si[i]] = z_uv(y[1,i], vi[i], fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
+        [Ti[i], pi[i], vi[i], ui[i], hi[i], si[i]] = z_uv(y[1,i], vi[i], fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
         if Ti[i] == -9999990.:
             raise ValueError("invalid properties")
         if x[i] <= np.pi:
@@ -93,6 +94,16 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
                 [alp[i], m_dot_in[i], m_dot_out[i]] = compression(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
             else:
                 [alp[i], m_dot_in[i], m_dot_out[i]] = push_out(pV, pos_piston[i], dxdt[i], Ti[i], pi[i], pZ, pZyk, vi[i])
+                #plt.figure(5)
+                #plt.plot(i, alp[i],"*r", label="alpha")
+                #plt.figure(6)
+                #plt.plot(i, m_dot_out[i],"*b", label="m_dot_out")
+                #plt.plot(i, dxdt[i],"*c", label="dxdt")
+                #plt.plot(i, vi[i],"*y", label="vi")
+                #plt.figure(7)
+                #plt.plot(i, pi[i],"*m",label="pi")
+                #if i == 1790:
+                    #plt.legend()
                 mass_flow_density = m_dot_out[i] / pZyk[1]
                 pZyk[1] = 5.1109e-4 * mass_flow_density ** -.486 * pV[0] ** 2 / Ver0[0] ** 2  # Aeff_o neu
         else:
@@ -108,16 +119,17 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
     stepwidth = x[1] - x[0]
     #print(f"m_aus {sum(m_dot_out)*stepwidth / (2 * np.pi * pV[7])}")
     #print(f"m_in {sum(m_dot_in)*stepwidth / (2 * np.pi * pV[7])}")
-    m_dot_in = m_dot_in * stepwidth / (2 * np.pi * pV[7]) /10
-    m_dot_out = m_dot_out * stepwidth / (2 * np.pi * pV[7]) /10
+    m_dot_in = m_dot_in #* stepwidth #/ (2 * np.pi * pV[7]) #/10
+    m_dot_out = m_dot_out #* stepwidth #/ (2 * np.pi * pV[7]) #/10
 
     dQ = alp * ht_surface * (y[2] - Ti) * 1e-3 # kW
     dthermal_dt = state_th_Masse(y, -dQ, pV)
     dmdt = m_dot_in - m_dot_out
-    dudt = (dQ + dW_fric + dW_rev - dmdt * y[1] - m_dot_out * hi + m_dot_in * pZ[4]) / y[0]  # kJ/kg
+    dudt = (dQ + dW_fric + dW_rev - dmdt * ui - m_dot_out * hi + m_dot_in * pZ[4]) / y[0]  # kJ/kg
     plt.figure(1)
     plt.plot(x,dudt)
-    plt.show()
+    plt.title("dudt")
+    #plt.show()
     return np.array([dmdt, dudt, dthermal_dt])
 
 def getalp(pV, step, dxdt, Ti, pi):
@@ -139,7 +151,7 @@ def state_th_Masse(y, Q, pV):
     '''
     ### mass and cv of thermal mass are in stationary state not crucial,
     ### parameter are chosen to achieve fast convergence without vibrations
-    m = .01  # kg
+    m = 10.  # kg
     cv = .502  # kJ/kg/K
     alp_a = 6.  # heat transfer coefficient to environment
     A = Ver0[3] * pV[8] / Ver0[2] * pV[0] / Ver0[0] * pV[1] / Ver0[
@@ -190,9 +202,19 @@ if __name__ == "__main__":
     p_in = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
     p_out = z_Tx(355, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
     T_in = 9.5 + 273.15
-    resolution = 360
+    resolution = 10000
     result = set_up(T_in, p_in, p_out, fluid, comp, resolution)
+    plt.figure(2)
+    plt.plot(np.linspace(0, 2 * np.pi, resolution), result.y[1])
+    plt.ylabel("u")
+    plt.figure(3)
+    plt.plot(np.linspace(0, 2 * np.pi, resolution), result.y[0])
+    plt.ylabel("m")
+    plt.figure(4)
+    plt.plot(np.linspace(0, 2 * np.pi, resolution), result.y[2])
+    plt.ylabel("T thermal")
 
     print(result.message)
+    print(result.y)
     #plt.plot(np.linspace(0, 2* np.pi, resolution), result.y[1])
     plt.show()
