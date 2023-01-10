@@ -41,8 +41,8 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     x_var = np.linspace(0, 2 * np.pi, resolution)
     y_start = np.zeros([3, len(x_var)])
     y_start[0, :] = 0.00019    #Ver0[1] * a_head / pZ[2]
-    y_start[1, :] = 570.74+20           #pZ[3]
-    y_start[2, :] = 321.91+x_var                #0.5 * (Tu + pZ[0])
+    y_start[1, :] = 570.74+60*x_var          #pZ[3]
+    y_start[2, :] = 321.91+10*x_var                #0.5 * (Tu + pZ[0])
     #Ti = np.zeros(len(x_var))
     #pi = np.zeros(len(x_var))
     #hi = np.zeros(len(x_var))
@@ -51,7 +51,7 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     #m_dot_out = np.zeros(len(x_var))
     #alp = np.zeros(len(x_var))
     #Ti, pi, hi, si, m_dot_in, m_dot_out, alp
-    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk), bc, x_var, y_start, tol=0.01, bc_tol=0.1)
+    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk), bc, x_var, y_start, tol=0.1, bc_tol=0.1)
     return res
 
 def initialization(x_length):
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     p_in = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
     p_out = z_Tx(355, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
     T_in = 9.5 + 273.15
-    resolution = 10000
+    resolution = 3600
     result = set_up(T_in, p_in, p_out, fluid, comp, resolution)
     plt.figure(2)
     plt.plot(np.linspace(0, 2 * np.pi, resolution), result.y[1])
