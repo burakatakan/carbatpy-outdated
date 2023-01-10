@@ -38,11 +38,11 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     pZyk = np.zeros(2)
     pZyk[0] = Aeff_i
     pZyk[1] = Aeff_o
-    x_var = np.linspace(0, 2 * np.pi, resolution)
+    x_var = np.linspace(0, 2 * np.pi, resolution)/ (2 * np.pi * pV[7])
     y_start = np.zeros([3, len(x_var)])
-    y_start[0, :] = 0.00019    #Ver0[1] * a_head / pZ[2]
-    y_start[1, :] = 570.74+60*x_var          #pZ[3]
-    y_start[2, :] = 321.91+10*x_var                #0.5 * (Tu + pZ[0])
+    y_start[0, :] = Ver0[1] * a_head / pZ[2]
+    y_start[1, :] = pZ[3]
+    y_start[2, :] = 42. + 273.
     #Ti = np.zeros(len(x_var))
     #pi = np.zeros(len(x_var))
     #hi = np.zeros(len(x_var))
@@ -51,7 +51,7 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     #m_dot_out = np.zeros(len(x_var))
     #alp = np.zeros(len(x_var))
     #Ti, pi, hi, si, m_dot_in, m_dot_out, alp
-    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk), bc, x_var, y_start, tol=0.1, bc_tol=0.1)
+    res = solve_bvp(lambda x, y: fun(x, y, pV, a_head, fluid, comp, pZ, pZyk), bc, x_var, y_start, tol=0.1, bc_tol=10, max_nodes=500)
     return res
 
 def initialization(x_length):
@@ -75,20 +75,20 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
 
         if y[2, i] < 0:
             y[2, i] = Tu
-
-    pos_piston = -(pV[1] / 2. * (1. - np.cos(x) + pV[2] *
-                    (1. - np.sqrt(1. - (1. / pV[2] * np.sin(x)) ** 2.)))) + pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
+    theta = x * (2 * np.pi * pV[7])
+    pos_piston = -(pV[1] / 2. * (1. - np.cos(theta) + pV[2] *
+                    (1. - np.sqrt(1. - (1. / pV[2] * np.sin(theta)) ** 2.)))) + pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
     volume_cylinder = a_head * pos_piston  # volume cylinder
     ht_surface = np.pi * pV[0] * pos_piston + 2. * a_head  # heat transfer surfaces
     vi = volume_cylinder / y[0]  # specific volume in cylinder, m³/kg
-    dxdtheta = -pV[1] / 2 * np.sin(x) * (1 + 1/pV[2] * np.cos(x) * (1 - (1/pV[2] * np.sin(x))**2)**-0.5)
+    dxdtheta = -pV[1] / 2 * np.sin(theta) * (1 + 1/pV[2] * np.cos(theta) * (1 - (1/pV[2] * np.sin(theta))**2)**-0.5)
     dxdt = (2 * np.pi * pV[7]) * dxdtheta
     dVdt = a_head * dxdt
     for i in range(0, len(x)):
         [Ti[i], pi[i], vi[i], ui[i], hi[i], si[i]] = z_uv(y[1,i], vi[i], fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
         if Ti[i] == -9999990.:
             raise ValueError("invalid properties")
-        if x[i] <= np.pi:
+        if theta[i] <= np.pi:
             dW_fric = - pV[5] * dVdt
             if pi[i] <= pZ[6]:
                 [alp[i], m_dot_in[i], m_dot_out[i]] = compression(pV, pos_piston[i], dxdt[i], Ti[i], pi[i])
@@ -129,6 +129,12 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
     plt.figure(1)
     plt.plot(x,dudt)
     plt.title("dudt")
+    plt.figure(2)
+    plt.plot(x,dmdt)
+    plt.title("dmdt")
+    plt.figure(3)
+    plt.plot(x,dthermal_dt)
+    plt.title("dTdt")
     #plt.show()
     return np.array([dmdt, dudt, dthermal_dt])
 
@@ -151,7 +157,7 @@ def state_th_Masse(y, Q, pV):
     '''
     ### mass and cv of thermal mass are in stationary state not crucial,
     ### parameter are chosen to achieve fast convergence without vibrations
-    m = 10.  # kg
+    m = 1000.  # kg
     cv = .502  # kJ/kg/K
     alp_a = 6.  # heat transfer coefficient to environment
     A = Ver0[3] * pV[8] / Ver0[2] * pV[0] / Ver0[0] * pV[1] / Ver0[
@@ -194,7 +200,7 @@ def suction(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk):
     return alp, m_dot_in, m_dot_out
 
 def bc(ya, yb):
-    return np.array([yb[0] - ya[0], yb[1] - ya[1], yb[2] - ya[2]])
+    return np.array([100000*yb[0] - 100000*ya[0], yb[1] - ya[1], yb[2] - ya[2]])
 
 if __name__ == "__main__":
     fluid = 'Propane * Butane'
@@ -204,13 +210,13 @@ if __name__ == "__main__":
     T_in = 9.5 + 273.15
     resolution = 3600
     result = set_up(T_in, p_in, p_out, fluid, comp, resolution)
-    plt.figure(2)
+    plt.figure(4)
     plt.plot(np.linspace(0, 2 * np.pi, resolution), result.y[1])
     plt.ylabel("u")
-    plt.figure(3)
+    plt.figure(5)
     plt.plot(np.linspace(0, 2 * np.pi, resolution), result.y[0])
     plt.ylabel("m")
-    plt.figure(4)
+    plt.figure(6)
     plt.plot(np.linspace(0, 2 * np.pi, resolution), result.y[2])
     plt.ylabel("T thermal")
 
