@@ -17,7 +17,6 @@ Rm = 8.3145  # gas constant J/mol/K
 Tu = 25. + 273.15  # ambient temperature
 dTK = 273.15  # conversion °C / K
 Ver0 = [34e-3, 34e-3, 2., .04]  # fit-compressor: D, H, cylinder, outer surface
-# TODO what is fit-compressor? duplication with pV!
 
 
 ###########################################
@@ -141,6 +140,7 @@ def push_out(i, fluid, z_it, comp, pV, pZyk, pZ):
     z_it = state_th_Masse(-Q, z_it, i, pV)
     m_dot = pZyk[1] / z_it[i - 1, 7] * np.sqrt(2. * (z_it[i - 1, 6] - pZ[6]) * \
                                                1000. * z_it[i - 1, 7])  # mass flow leaving the cylinder, kg/s
+
     dm = m_dot * ((z_it[i, 0] - z_it[i - 1, 0]) / (2. * np.pi * pV[7]))
     # pushed out mass, kg
     mi = z_it[i - 1, 11] - dm  # resulting mass in cylinder, kg
@@ -293,6 +293,7 @@ def getETA(T_e, p_e, p_a, fluid_in, comp, pV, pZ, z_it, IS, pZyk, IS0):
     z_it[:, 1] = -(pV[1] / 2. * (1. - np.cos(z_it[:, 0]) + pV[2] *
                                  (1. - np.sqrt(1. - (1. / pV[2] * np.sin(z_it[:, 0])) ** 2.)))) + \
                  pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
+
     a_head = np.pi / 4. * pV[0] ** 2.   # area of cylinder head
     z_it[:, 2] = a_head * z_it[:, 1]  # volume cylinder
     z_it[:, 3] = np.pi * pV[0] * z_it[:, 1] + 2. * a_head  # heat transfer surfaces
