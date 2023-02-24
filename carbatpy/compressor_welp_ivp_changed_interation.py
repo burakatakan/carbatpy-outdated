@@ -38,47 +38,88 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     pZyk = np.zeros(2)
     pZyk[0] = Aeff_i
     pZyk[1] = Aeff_o
+    resolution = 3600
     number_of_cycles = 20
-    x_max = number_of_cycles / pV[7]
+    x_max = 1 / pV[7]
     y_start = np.zeros(3)
     y_start[0] = Ver0[1] * a_head / pZ[2]       #m
     y_start[1] = pZ[3]                          #u
     y_start[2] = Tu                             #T
-    #Ti = np.zeros(len(x_var))
-    #pi = np.zeros(len(x_var))
-    #hi = np.zeros(len(x_var))
-    #si = np.zeros(len(x_var))
-    #m_dot_in = np.zeros(len(x_var))
-    #m_dot_out = np.zeros(len(x_var))
-    #alp = np.zeros(len(x_var))
-    #Ti, pi, hi, si, m_dot_in, m_dot_out, alp
-    res = solve_ivp(fun, [0, x_max], y_start, method='RK45', args=[pV, a_head, fluid, comp, pZ, pZyk], max_step=1/(pV[7]*3600))
-    return res
+    err = 10
+    count = 0
+    y_timetrack_m = []
+    y_timetrack_u = []
+    y_timetrack_t = []
+    y_timetrack_m.append(y_start[0])
+    y_timetrack_u.append(y_start[1])
+    y_timetrack_t.append(y_start[2])
+    while err > 0.005:
+        res = solve_ivp(fun, [0, x_max], y_start, method='RK45', args=[pV, a_head, fluid, comp, pZ, pZyk], max_step=1/resolution)
+        err = np.sqrt((res.y[0, -1] - y_start[0]) ** 2) + np.sqrt((res.y[1, -1] - y_start[1]) ** 2) + np.sqrt((res.y[2, -1] - y_start[2]) ** 2)
+        pZyk[1] = help_variable
+        if pZyk[1] == Aeff_o:
+            (f"Aeffout not updatet, count = {count}")
+        y_timetrack_m.append(res.y[0,-1])
+        y_timetrack_u.append(res.y[1, -1])
+        y_timetrack_t.append(res.y[2, -1])
+        y_start[0] = res.y[0, -1]
+        y_start[1] = res.y[1, -1]
+        y_start[2] = res.y[2, -1]
+        count += 1
+    print(f"Anzahl der Zyklen: {count}")
 
-def initialization(x_length):
-    si = np.zeros(x_length)
-    Ti = np.zeros(x_length)
-    alp = np.zeros(x_length)
-    hi = np.zeros(x_length)
-    m_dot_in = np.zeros(x_length)
-    m_dot_out = np.zeros(x_length)
-    pi = np.zeros(x_length)
-    ui = np.zeros(x_length)
-    return si, Ti, alp, hi, m_dot_in, m_dot_out, pi, ui
+    iss_eff, degree_delivery = cal_efficiency_delivery(res, pV, pZ, pZyk, a_head, fluid, comp)
+
+    #TODO implementieren von dhdt, damit h auch output ist
+
+
+    return res, count, y_timetrack_m, y_timetrack_u, y_timetrack_t, iss_eff, degree_delivery
+
+def cal_efficiency_delivery(res, pV, pZ, pZyk, a_head,fluid,comp ):
+    # calculation of isentropic efficiency and delivery ratio
+    m_max = np.array(res.y[0]).max()
+    m_min = np.array(res.y[0]).min()
+    m_aus = m_max - m_min  # overall pushed out mass
+    m0 = np.pi * pV[0] ** 2. * pV[1] / pZ[2] / 4.  # sucked-in mass ideal compressor
+    degree_delivery = m_aus / m0  # degree of delivery
+
+    theta = res.t * (2 * np.pi * pV[7])
+    pos_piston = -(pV[1] / 2. * (1. - np.cos(theta) + pV[2] *
+                                 (1. - np.sqrt(1. - (1. / pV[2] * np.sin(theta)) ** 2.)))) + pV[4] * pV[1] + pV[
+                     1]  # piston position, x=0 at UT
+    volume_cylinder = a_head * pos_piston  # volume cylinder
+    vi = volume_cylinder / res.y[0]  # specific volume in cylinder, m³/kg
+    dxdtheta = -pV[1] / 2 * np.sin(theta) * (
+                1 + 1 / pV[2] * np.cos(theta) * (1 - (1 / pV[2] * np.sin(theta)) ** 2) ** -0.5)
+    dxdt = (2 * np.pi * pV[7]) * dxdtheta
+    m_out = []
+    h_out = []
+    for i, t in enumerate(res.t):
+        [Ti, pi, vi[i], ui, hi, si] = z_uv(res.y[1, i], vi[i], fluid,
+                                    comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
+        if Ti == -9999990.:
+            raise ValueError("invalid properties")
+        if theta[i] <= np.pi and pi >= pZ[6]:
+            [alp, m_dot_in, m_dot_out] = push_out(pV, pos_piston[i], dxdt[i], Ti, pi, pZ, pZyk, vi[i])
+            mass_flow_density = m_dot_out / pZyk[1]
+            pZyk[1] = 5.1109e-4 * mass_flow_density ** -.486 * pV[0] ** 2 / Ver0[0] ** 2  # Aeff_o neu
+            array_parts = len(theta)
+            h_out.append(m_dot_out * 1/pV[7] / array_parts * hi)
+            m_out.append(m_dot_out* 1/pV[7] / array_parts)
+
+
+    h_aus = np.sum(h_out)/ np.sum(m_out)  # average push out enthalpy
+    h_aus_s = z_ps(pZ[6], pZ[5], fluid, comp)[
+        4]  # fl.zs_kg(['p','s'],[pZ[6],pZ[5]],['h'],fluid)[0]  # isentropic outlet enthalpy
+    is_eff = (h_aus_s - pZ[4]) / (h_aus - pZ[4])  # isentropic efficiency
+    return is_eff, degree_delivery
+
 
 def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
-    #si, Ti, alp, hi, m_dot_in, m_dot_out, pi, ui = initialization(len(x))
-    #for i in range(0, len(x)):
     if y[0] < 0:
         y[0] = 0.0002
-        #if y[0, i] > 0.0003:
-            #y[0, i] = 0.0002
 
-        #if y[2, i] < 0:
-            #y[2, i] = Tu
     theta = x * (2 * np.pi * pV[7])
-    while theta >= 2 * np.pi:
-        theta = theta - 2 * np.pi
     pos_piston = -(pV[1] / 2. * (1. - np.cos(theta) + pV[2] *
                     (1. - np.sqrt(1. - (1. / pV[2] * np.sin(theta)) ** 2.)))) + pV[4] * pV[1] + pV[1]  # piston position, x=0 at UT
     volume_cylinder = a_head * pos_piston  # volume cylinder
@@ -87,7 +128,6 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
     dxdtheta = -pV[1] / 2 * np.sin(theta) * (1 + 1/pV[2] * np.cos(theta) * (1 - (1/pV[2] * np.sin(theta))**2)**-0.5)
     dxdt = (2 * np.pi * pV[7]) * dxdtheta
     dVdt = a_head * dxdt
-    #for i in range(0, len(x)):
     [Ti, pi, vi, ui, hi, si] = z_uv(y[1], vi, fluid, comp)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
     if Ti == -9999990.:
             raise ValueError("invalid properties")
@@ -97,18 +137,10 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
             [alp, m_dot_in, m_dot_out] = compression(pV, pos_piston, dxdt, Ti, pi)
         else:
             [alp, m_dot_in, m_dot_out] = push_out(pV, pos_piston, dxdt, Ti, pi, pZ, pZyk, vi)
-                #plt.figure(5)
-                #plt.plot(i, alp[i],"*r", label="alpha")
-                #plt.figure(6)
-                #plt.plot(i, m_dot_out[i],"*b", label="m_dot_out")
-                #plt.plot(i, dxdt[i],"*c", label="dxdt")
-                #plt.plot(i, vi[i],"*y", label="vi")
-                #plt.figure(7)
-                #plt.plot(i, pi[i],"*m",label="pi")
-                #if i == 1790:
-                    #plt.legend()
             mass_flow_density = m_dot_out / pZyk[1]
             pZyk[1] = 5.1109e-4 * mass_flow_density ** -.486 * pV[0] ** 2 / Ver0[0] ** 2  # Aeff_o neu
+            global help_variable
+            help_variable = pZyk[1]
     else:
         dW_fric = pV[5] * dVdt
         if pi >= pZ[1]:
@@ -119,9 +151,6 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
 
 
     dW_rev = -np.multiply(pi, dVdt)
-    #stepwidth = x[1] - x[0]
-    #print(f"m_aus {sum(m_dot_out)*stepwidth / (2 * np.pi * pV[7])}")
-    #print(f"m_in {sum(m_dot_in)*stepwidth / (2 * np.pi * pV[7])}")
     m_dot_in = m_dot_in #* stepwidth #/ (2 * np.pi * pV[7]) #/10
     m_dot_out = m_dot_out #* stepwidth #/ (2 * np.pi * pV[7]) #/10
 
@@ -129,16 +158,6 @@ def fun(x, y, pV, a_head, fluid, comp, pZ, pZyk):
     dthermal_dt = state_th_Masse(y, -dQ, pV)
     dmdt = m_dot_in - m_dot_out
     dudt = (dQ + dW_fric + dW_rev - dmdt * ui - m_dot_out * hi + m_dot_in * pZ[4]) / y[0]  # kJ/kg
-    plt.figure(1)
-    plt.plot(x,dudt)
-    plt.title("dudt")
-    plt.figure(2)
-    plt.plot(x,dmdt)
-    plt.title("dmdt")
-    plt.figure(3)
-    plt.plot(x,dthermal_dt)
-    plt.title("dTdt")
-    #plt.show()
     return np.array([dmdt, dudt, dthermal_dt])
 
 def getalp(pV, step, dxdt, Ti, pi):
@@ -160,13 +179,13 @@ def state_th_Masse(y, Q, pV):
     '''
     ### mass and cv of thermal mass are in stationary state not crucial,
     ### parameter are chosen to achieve fast convergence without vibrations
-    m = 1000.  # kg
+    m = 1.  # kg
     cv = .502  # kJ/kg/K
     alp_a = 6.  # heat transfer coefficient to environment
     A = Ver0[3] * pV[8] / Ver0[2] * pV[0] / Ver0[0] * pV[1] / Ver0[
         1]  # Outer surface cylinder estimated via geometry related to fitting compressor
     Q_u = alp_a * A * (Tu - y[2]) * 1e-3 # kW
-    dthermal_dt = (-Q + Q_u) / cv / m
+    dthermal_dt = (Q + Q_u) / cv / m
     return dthermal_dt
 
 def compression(pV, pos_piston, dxdt, Ti, pi):
@@ -212,18 +231,33 @@ if __name__ == "__main__":
     p_out = z_Tx(355, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
     T_in = 9.5 + 273.15
     resolution = 3600
-    result = set_up(T_in, p_in, p_out, fluid, comp, resolution)
+    result, count, y_timetrack_m, y_timetrack_u, y_timetrack_t, is_eff, degree_delivery = set_up(T_in, p_in, p_out, fluid, comp, resolution)
+    print(f"isentropic effciency: {is_eff}")
+    print(f"degree of delivery: {degree_delivery}")
+    time_red = result.t.reshape(-1,2).mean(axis=1)
+    mass_red = result.y[0].reshape(-1,2).mean(axis=1)
+    inner_energy_red = result.y[1].reshape(-1, 2).mean(axis=1)
+    temperature_red = result.y[2].reshape(-1, 2).mean(axis=1)
     plt.figure(4)
-    plt.plot(result.t[3600*19::], result.y[1,3600*19::])
-    plt.ylabel("u")
-    plt.figure(5)
-    plt.plot(result.t[3600*19::], result.y[0,3600*19::])
+    plt.plot(time_red, mass_red)
     plt.ylabel("m")
+    plt.figure(5)
+    plt.plot(time_red, inner_energy_red)
+    plt.ylabel("u")
     plt.figure(6)
-    plt.plot(result.t[3600*19::], result.y[2,3600*19::])
+    plt.plot(time_red, temperature_red)
     plt.ylabel("T thermal")
-
+    plt.figure(7)
+    x_values = np.linspace(0,count,count+1)
+    plt.plot(x_values, y_timetrack_m)
+    plt.title("Timetrack mass")
+    plt.figure(8)
+    plt.plot(x_values, y_timetrack_u)
+    plt.title("Timetrack inner energy")
+    plt.figure(9)
+    plt.plot(x_values, y_timetrack_t)
+    plt.title("timetrack Temperature")
     print(result.message)
-    print(result.y)
+    #print(result.y)
     #plt.plot(np.linspace(0, 2* np.pi, resolution), result.y[1])
     plt.show()

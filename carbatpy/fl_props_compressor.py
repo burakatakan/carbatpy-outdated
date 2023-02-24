@@ -9,7 +9,7 @@ Created on Fri Dec  9 21:26:04 2022
 """
 
 import numpy as np
-from carbatpy import fluid_properties_rp as fp
+import fluid_properties_rp as fp
 _props = "REFPROP" 
 fluid_ = "Propane * Butane"
 comp_ = [1.0, 0.]  # [0.5, 0.5]
