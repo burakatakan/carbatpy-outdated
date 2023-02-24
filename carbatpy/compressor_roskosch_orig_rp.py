@@ -218,7 +218,9 @@ def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
     pZyk[1] = 1.5e-5 * pV[0] ** 2. / Ver0[0] ** 2.
     # print(pZyk)
     count = 0
-
+    store_valm = []
+    store_valu = []
+    store_valT = []
     while 1:
         count += 1
         for i in range(1, IS):
@@ -259,8 +261,30 @@ def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
             # print("BA:",m_dichte,pV[0], error)
             pZyk[1] = 5.1109e-4 * (m_dichte) ** (-.486) * pV[0] ** 2. / Ver0[0] ** 2.  # Aeff_o neu
             z_it[0, 5:14] = z_it[-1, 5:14]  # End values of last cycle = Start values of next cycle
+            store_valm.append(z_it[-1,11])
+            store_valu.append(z_it[-1, 8])
+            store_valT.append(z_it[-1, 12])
 
     # Efficiency evaluation
+    plot_wanted = "yes"
+    if plot_wanted == "yes":
+        plt.figure(1)
+        plt.plot(z_it[:, 0], z_it[:, 11])
+        plt.figure(2)
+        plt.plot(z_it[:, 0], z_it[:, 8])
+        plt.figure(3)
+        plt.plot(z_it[:, 0], z_it[:, 12])
+        x_val = np.linspace(0, count, count-2)
+        plt.figure(4)
+        plt.plot(x_val, store_valm)
+        plt.figure(5)
+        plt.plot(x_val ,store_valu)
+        plt.figure(6)
+        plt.plot(x_val, store_valT)
+
+        plt.show()
+
+
     cell_push_out = find(z_it[:, 4] == 1)  # BA find()
     m_aus = np.sum(z_it[cell_push_out, 14])  # overall pushed out mass
     m0 = np.pi * pV[0] ** 2. * pV[1] / pZ[2] / 4.  # sucked-in mass ideal compressor

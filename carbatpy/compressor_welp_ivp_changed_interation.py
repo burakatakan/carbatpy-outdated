@@ -8,7 +8,7 @@ author: Alexandra Welp
 
 import numpy as np
 import matplotlib.pyplot as plt
-from fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm
+from carbatpy.fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm
 from scipy.integrate import solve_ivp
 
 Rm = 8.3145  # gas constant J/mol/K
@@ -35,25 +35,26 @@ def set_up(T_inlet, p_inlet, p_outlet, fluid, comp, resolution):
     # setting of Aeff_o, implicit function relatively to average mass flow density over valve
     # at 1st iteration, the mass flow density is unknown, typical value is guessed
     Aeff_o = 1.5e-5 * pV[0] ** 2. / Ver0[0] ** 2.
+
     pZyk = np.zeros(2)
     pZyk[0] = Aeff_i
     pZyk[1] = Aeff_o
     resolution = 3600
-    number_of_cycles = 20
+
     x_max = 1 / pV[7]
     y_start = np.zeros(3)
-    y_start[0] = Ver0[1] * a_head / pZ[2]       #m
-    y_start[1] = pZ[3]                          #u
-    y_start[2] = Tu                             #T
-    err = 10
-    count = 0
-    y_timetrack_m = []
+    y_start[0] = Ver0[1] * a_head / pZ[2]       # mass in cylinder
+    y_start[1] = pZ[3]                          # u in cylinder
+    y_start[2] = Tu                             # T of Thermal mass
+    err = 10                                    # start value
+    count = 0                                   # counts number of cycles until desired accuracy as achieved
+    y_timetrack_m = []                          # tracks properties after every cycle
     y_timetrack_u = []
     y_timetrack_t = []
     y_timetrack_m.append(y_start[0])
     y_timetrack_u.append(y_start[1])
     y_timetrack_t.append(y_start[2])
-    while err > 0.005:
+    while err > 0.5:
         res = solve_ivp(fun, [0, x_max], y_start, method='RK45', args=[pV, a_head, fluid, comp, pZ, pZyk], max_step=1/resolution)
         err = np.sqrt((res.y[0, -1] - y_start[0]) ** 2) + np.sqrt((res.y[1, -1] - y_start[1]) ** 2) + np.sqrt((res.y[2, -1] - y_start[2]) ** 2)
         pZyk[1] = help_variable
@@ -179,7 +180,7 @@ def state_th_Masse(y, Q, pV):
     '''
     ### mass and cv of thermal mass are in stationary state not crucial,
     ### parameter are chosen to achieve fast convergence without vibrations
-    m = 1.  # kg
+    m = .001  # kg
     cv = .502  # kJ/kg/K
     alp_a = 6.  # heat transfer coefficient to environment
     A = Ver0[3] * pV[8] / Ver0[2] * pV[0] / Ver0[0] * pV[1] / Ver0[
