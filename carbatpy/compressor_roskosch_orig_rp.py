@@ -303,11 +303,7 @@ def getETA(T_e, p_e, p_a, fluid_in, comp, pV, pZ, z_it, IS, pZyk, IS0):
     fluid = fluid_in
     comp = comp
 
-    ###############################     parameter set specific for compressor   ###################################
 
-    pV = [34e-3, 34e-3, 3.5, .04, .06071, 48.916, 50., 50. / 2., 2.]  # parameter see above
-
-    #################################################################################################################
     pZ[0:6] = z_Tp(T_e, p_e, fluid,
                    comp)  # fl.zs_kg(['T','p'],[T_e,p_e],['T','p','v','u','h','s'],fluid) #state suction pipe
     pZ[6] = p_a  # pressure in pressure pipe
@@ -347,7 +343,6 @@ def geometry(pV, pZ, z_it, fluid, IS):
 if __name__ == "__main__":
     IS = 360  # number of differential steps for one cycle
     IS0 = IS
-    pV = np.zeros(8, float)
     pZ = np.zeros(7, float)
     pZyk = np.zeros(2, float)
     z_it = np.zeros([IS, 16])
@@ -363,6 +358,12 @@ if __name__ == "__main__":
     print("Drücke %2.2f kPa %2.2f kPa" % (pe, pa))
     dt_all = np.linspace(9.5, 20.5, 3)
     out = []
+    ###############################     parameter set specific for compressor   ###################################
+
+    pV = [34e-3, 34e-3, 3.5, .04, .06071, 48.916, 50., 50. / 2., 2.]  # parameter see above
+
+    #################################################################################################################
+
     for dt in dt_all:
         o1 = getETA(dt + 273.15, pe, pa, fluid, comp, pV, pZ, z_it, IS, pZyk, IS0)
         # o1.append((np.max(z_it[:,11]) - np.min(z_it[:,11]) * pV[7]))  # mass flow
