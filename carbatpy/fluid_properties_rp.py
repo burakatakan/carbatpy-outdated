@@ -104,7 +104,7 @@ def hp_exergy(h, p, fluid, T_env=__Tenv__, p_env=__penv__, props=_props,
 def hp(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
     """
     Properties needed for integration at given  values of pressure 
-    and specific enthalpy, single phase.
+    and specific enthalpy.
 
     Parameters
     ----------
@@ -137,12 +137,13 @@ def hp(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
 
         if option == 0:
             o = RP.REFPROP2dll(
-                fluid, "HP", "T;D;S;q;CP;VIS;TCX;PRANDTL;KV", units, 0, h, p, composition)
+                fluid, "HP", "T;D;S;QMASS;CP;VIS;TCX;PRANDTL;KV", units, 0, h, p, composition)
             alle = [o.Output[0], p, h, 1/o.Output[1], *o.Output[2:9]]
             if alle[8] < 0:
                 print("error in hp, probably saturated")
+                print("alle in hp", alle, o)
         if option == 1:
-            o = RP.REFPROP2dll(fluid, "HP", "T;D;S;q",
+            o = RP.REFPROP2dll(fluid, "HP", "T;D;S;QMASS",
                                units, 0, h, p, composition)
             alle = [o.Output[0], p, h, 1/o.Output[1], *o.Output[2:4]]
 
@@ -544,7 +545,62 @@ def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
                              cp, lambda_s, phase, prandtl])
         elif option == 1:
             alle = [temp, p,  h, 1/rho, s,  x]
+    
+    return np.array(alle)
 
+def prop_Tq(T, q, fluid, composition=[1.0], option=1, units=_units,
+            props=_props):
+    """
+    Saturation state properties at given pressure  and quality for a certain 
+    fluid (mixture).
+
+    Parameters
+    ----------
+    Temp in K.
+    q: float (0<q<1)
+        quality
+
+    fluid :   an AbstractState in coolprop or a fluid in REFPROP.
+    composition: list of floats
+        mole fraction of each fluid.
+    option: integer
+        [1] only T p h v s and q
+
+    units: integer
+        select units (SI of property model, for REFPROP: 21)
+
+    Returns
+    -------
+    alle : numpy array (2,4)
+        includes:  properies in saturated state at given pressure p
+        of liquid (0,:) and vapor(1,:),
+        T, p, h, v,s, q
+        all in SI units.
+
+    """
+
+    if props == "REFPROP":
+        o = RP.REFPROP2dll(fluid, "TQ", "P;H;D;S", units, 0, T, q, composition)
+        if option == 0:
+            alle = []
+
+        elif option == 1:
+            alle = [T, o.Output[0], o.Output[1],
+                    1 / o.Output[2], o.Output[3], q]
+
+    elif props == "CoolProp":
+        fluid.update(CP.TQ_INPUTS, T, q)
+        reihe = [CP.iP, CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
+                 CP.iconductivity, CP.iCpmass, CP.iviscosity]
+        props = [fluid.keyed_output(k) for k in reihe]
+        p, h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
+
+        if option == 0:
+            alle = np.array([T, p, x, h,  s, rho, mu,
+                             cp, lambda_s, phase, prandtl])
+        elif option == 1:
+            alle = [T, p,  h, 1/rho, s,  x]
+    print(props)
     return np.array(alle)
 
 
