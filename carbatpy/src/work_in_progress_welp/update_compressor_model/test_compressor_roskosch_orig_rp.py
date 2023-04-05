@@ -28,6 +28,7 @@ def test_overall_script():
     pa = comros.z_Tx(355, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
     dt_all = np.linspace(9.5, 20.5, 3)
     out = []
+    pV = [34e-3, 34e-3, 3.5, .04, .06071, 48.916, 50., 50. / 2., 2.]  # parameter see above
     for dt in dt_all:
         o1 = comros.getETA(dt + 273.15, pe, pa, fluid, comp, pV, pZ, z_it, IS, pZyk, IS0)
         # o1.append((np.max(z_it[:,11]) - np.min(z_it[:,11]) * pV[7]))  # Massenstrom
