@@ -203,7 +203,7 @@ def uv(u, v, fluid, composition=[1.0], option=1, units=_units, props=_props):
             if alle[8] < 0:
                 print("error in uv, probably saturated")
         if option == 1:
-            o = RP.REFPROP2dll(fluid, "ED", "T;p;S;q;H",
+            o = RP.REFPROP2dll(fluid, "ED", "T;p;S;QMASS;H",
                                units, 0, u, 1/v, composition)
             alle = [*o.Output[0:2],  o.Output[4], v,*o.Output[2:4]]
 
@@ -256,7 +256,7 @@ def sp(s, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
 
     """
     if props == "REFPROP":
-        o = RP.REFPROP2dll(fluid, "SP", "T;D;H;q", units, 0, s, p, composition)
+        o = RP.REFPROP2dll(fluid, "SP", "T;D;H;QMASS", units, 0, s, p, composition)
         if option == 0:
             alle = []
         if option == 1:
@@ -339,7 +339,7 @@ def tp(temp, p,  fluid, composition=[1.0], option=1, units=_units,
 
     """
     if props == "REFPROP":
-        o = RP.REFPROP2dll(fluid, "TP", "H;D;S;q", units,
+        o = RP.REFPROP2dll(fluid, "TP", "H;D;S;QMASS", units,
                            0, temp, p, composition)
         if option == 0:
             alle = []
@@ -349,7 +349,7 @@ def tp(temp, p,  fluid, composition=[1.0], option=1, units=_units,
         elif option == 2: ## for moelcular mass ouput:
             no_compounds = len(composition)
             mm_string = ";MM"*no_compounds
-            o = RP.REFPROP2dll(fluid, "TP", "H;D;S;q"+ mm_string, units,
+            o = RP.REFPROP2dll(fluid, "TP", "H;D;S;QMASS"+ mm_string, units,
                                0, temp, p, composition)
             mol_mass_mix = (o.Output[4:4+no_compounds]*np.array(composition)).sum()
             
