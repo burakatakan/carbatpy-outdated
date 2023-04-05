@@ -11,7 +11,7 @@ Created on Thu Jan 31 17:46:25 2019
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm
+from carbatpy.fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm
 
 Rm = 8.3145  # gas constant J/mol/K
 Tu = 25. + 273.15  # ambient temperature
@@ -330,23 +330,30 @@ if __name__ == "__main__":
     # fluid = []
     # comp = [1.0]  # must be checked BA
 
-    fluid = 'Propane * Butane'
-    comp = [1.0, 0.]
-    pe = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
-    pa = z_Tx(355, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
-
+    fluid = 'Propane * IsoButane'
+    comp_all = [[1.0-0.28286, 0.28286], [1-0.54155, 0.54155], [1-0.78804, 0.78804], [0, 1]]
+    Te_all = [17.160, 17.283, 17.156, 17.243]
+    pe_all = [368, 294, 215, 169]
+    pa_all = [1886, 1502, 1237, 1051]
+    #pe = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
+    #pa = z_Tx(355, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
+    #pe = 1.7e2
+    #pa = 10e2
     fo = open("Daten.txtx", "w")
-    print("Drücke %2.2f kPa %2.2f kPa" % (pe, pa))
-    dt_all = np.linspace(9.5, 20.5, 3)
+    #print("Drücke %2.2f kPa %2.2f kPa" % (pe, pa))
     out = []
-    for dt in dt_all:
-        print(f"{dt+273.15} {pe} {pa} {fluid} {comp} {pV} {pZ} {z_it} {IS} {pZyk} {IS0}")
-        o1 = getETA(dt + 273.15, pe, pa, fluid, comp, pV, pZ, z_it, IS, pZyk, IS0)
+    for f, comp in enumerate(comp_all):
+        print(Te_all[f], pe_all[f], pa_all[f], comp)
+        o1 = getETA(Te_all[f] + 273.15, pe_all[f], pa_all[f], fluid, comp, pV, pZ, z_it, IS, pZyk, IS0)
         # o1.append((np.max(z_it[:,11]) - np.min(z_it[:,11]) * pV[7]))  # mass flow
         out.append(o1)
-        print(dt, o1)
+        print(comp, o1)
     out = np.array(out)
-    plt.plot(dt_all, out)
+    plt.plot([0.28286,0.54155,0.78804,1], out[:,0], "->r", label=["isentropic"])
+    plt.plot([0.28286,0.54155,0.78804,1], out[:,1], "-sb", label=["volumetric"])
+    plt.legend()
+    plt.xlabel("molfraction of IsoButane")
+    plt.ylabel("isentropic and volumetric compressor efficiency")
     plt.show()
     fo.write(str(out))
     fo.close()
