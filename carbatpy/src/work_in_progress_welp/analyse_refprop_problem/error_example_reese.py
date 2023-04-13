@@ -30,6 +30,10 @@ def diffeq_enthalpy_ivp(ort, y, input_values, wf='Isobutane', sf='Water'):
     # Stoffeigenschaften der Fluide: Dichte, Wärmekapazität, kinematische Viskosität, Thermische Leitfähigkeit, Prandtl-Zahl, Temperatur
     Zustand_wf_x = RP.REFPROPdll(wf, "PH", "D;CP;VIS;TCX;PRANDTL;T", MASS_BASE_SI, 0, 0, 10e5, h_wf, [0]).Output[0:6]
     Zustand_sf_x = RP.REFPROPdll(sf, "PH", "D;CP;VIS;TCX;PRANDTL;T", MASS_BASE_SI, 0, 0, 1e5, h_sf, [0]).Output[0:6]
+    if Zustand_sf_x[0] == -9999990.:
+        raise ValueError(f"Unplausible state in Zustand_wf_x: {Zustand_wf_x}")
+    if Zustand_sf_x[0] == -9999990.:
+        raise ValueError(f"Unplausible state in Zustand_sf_x: {Zustand_sf_x}")
 
     # Temperaturen der Fluide in: K
     T_wf = Zustand_wf_x[5]
