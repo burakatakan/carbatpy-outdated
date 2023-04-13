@@ -55,15 +55,6 @@ def diffeq_enthalpy_ivp(ort, y, input_values, wf='Isobutane', sf='Water'):
     return [dhwf, dhsf]
 
 
-def run_model(input_values, y_bc, orte, int_method, L, sf="Water", wf="Isobutane"):
-
-
-    res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort, y, input_values, wf=wf, sf=sf), (0, L),
-                    y_bc, t_eval=orte, method=int_method)
-
-    return res
-
-
 if __name__ == "__main__":
     sf = "Water"
     wf = "Isobutane"
@@ -107,7 +98,8 @@ if __name__ == "__main__":
     print("\n______________________________________________\nstarting for-loop....\n")
 
     for i in range(10000):
-        solution = run_model(parameter_values, y_bc, orte, int_method, L)
+        res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort, y, parameter_values, wf=wf, sf=sf), (0, L),
+                        y_bc, t_eval=orte, method=int_method)
         print('Run: ' + str(i) + ', Prozent: ' + str(round(i / 10000 * 100, 3)) + ' %')
 
 
