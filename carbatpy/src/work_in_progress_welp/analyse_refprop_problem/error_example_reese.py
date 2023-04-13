@@ -7,17 +7,11 @@ Created on Wed Feb 15 20:40:12 2023
 
 "==========================================   IMPORT   ==========================================="
 
-from SALib.sample import saltelli
-
 import numpy as np
-import datetime
 import os
 
 from scipy.integrate import solve_ivp
 from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
-from ht.conv_internal import Nu_conv_internal as nu_corr
-import fluids.friction as frict
-import fluids.core as flc
 
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
 RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
@@ -57,13 +51,33 @@ def diffeq_enthalpy_ivp(ort, y, input_values, wf='Isobutane', sf='Water'):
     return [dhwf, dhsf]
 
 
-def run_model(parameter_values, sf="Water", wf="Isobutane"):
-    global L
+def run_model(input_values, y_bc, orte, int_method, L, sf="Water", wf="Isobutane"):
+
+
+    res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort, y, input_values, wf=wf, sf=sf), (0, L),
+                    y_bc, t_eval=orte, method=int_method)
+
+    return res
+
+
+if __name__ == "__main__":
+    sf = "Water"
+    wf = "Isobutane"
+
+    int_method = 'BDF'
+    L = 2
+
+    p_wf_0 = 15e5
+    p_sf_0 = 1e5
+    dT_max = 10
+    m_wf = 10e-3
+    m_sf = 40e-3
+    c_wf = 1
+    c_sf = 1
+
     lam_rohr = 50
     ds = 1e-3
     z = [0]
-
-    p_wf_0, p_sf_0, dT_max, m_wf, m_sf, c_wf, c_sf = parameter_values
 
     T_wf_sat = RP.REFPROPdll(wf, "PQ", "T", MASS_BASE_SI, 0, 0, p_wf_0, 1, z).Output[0]
     T_sf_0 = T_wf_sat - dT_max
@@ -79,71 +93,17 @@ def run_model(parameter_values, sf="Water", wf="Isobutane"):
     dA = np.sqrt(4 * area_sf / np.pi + da ** 2)
     dh = dA - da
 
-    input_values = [p_wf_0, p_sf_0, di, ds, dh, da, area_wf, area_sf, lam_rohr, m_wf, m_sf, z, T_sf_0]
+    parameter_values = [p_wf_0, p_sf_0, di, ds, dh, da, area_wf, area_sf, lam_rohr, m_wf, m_sf, z, T_sf_0]
 
     h_wf_sat = RP.REFPROPdll(wf, "PQ", "H", MASS_BASE_SI, 0, 0, p_wf_0, 1, z).Output[0]
     h_sf_0 = RP.REFPROPdll(sf, "PT", "H", MASS_BASE_SI, 0, 0, p_sf_0, T_sf_0, [0]).Output[0]
     y_bc = [h_wf_sat, h_sf_0]
 
     orte = np.linspace(0, L, 100)  # Definition der Stützstellen
-    int_method = 'BDF'
-
-    res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort, y, input_values, wf=wf, sf=sf), (0, L),
-                    y_bc, t_eval=orte, method=int_method)
-
-    # res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort,y, input_values, wf=wf, sf=sf), (0, L),
-    #                  y_bc, t_eval = orte, method=int_method, events = (event_saturatedstate, event_dT_max))
-
-    return res
-
-
-def event_saturatedstate(x, h):
-    global sf, deltaT
-    T_sat = RP.REFPROPdll(sf, "PQ", "T", MASS_BASE_SI, 0, 0, 1e5, 0, [0]).Output[0]
-    T_abbruch = T_sat - deltaT
-    h_abbruch = RP.REFPROPdll(sf, "PT", "H", MASS_BASE_SI, 0, 0, 1e5, T_abbruch, [0]).Output[0]
-    # print('event_saturatedstate:' + str(h[1]-h_abbruch))
-    return h[1] - h_abbruch
-
-
-event_saturatedstate.terminal = True
-
-
-def event_dT_max(x, h):
-    global sf, deltaT_max
-    T_wf = RP.REFPROPdll(wf, "PH", "T", MASS_BASE_SI, 0, 0, 15e5, h[0], [0]).Output[0]
-    T_sf = RP.REFPROPdll(sf, "PH", "T", MASS_BASE_SI, 0, 0, 1e5, h[1], [0]).Output[0]
-    dT = T_wf - T_sf
-    # print('event_dT_max:' + str(dT-deltaT_max))
-    return dT - deltaT_max
-
-
-event_dT_max.terminal = True
-
-if __name__ == "__main__":
-    sf = "Water"
-    wf = "Isobutane"
-
-    int_method = 'BDF'
-    L = 2
-
-    deltaT_max = 50  # Eventbedingung, größtest lokales Delta T
-    deltaT = 10  # Eventbedingung, delta T zur Sattdampftemperatur des Wassers
-
-    p_wf_0 = 15e5
-    p_sf_0 = 1e5
-    dT_max = 10
-    m_wf = 10e-3
-    m_sf = 40e-3
-    c_wf = 1
-    c_sf = 1
-
-    parameter_values = p_wf_0, p_sf_0, dT_max, m_wf, m_sf, c_wf, c_sf
-
-    print("\n______________________________________________\nrun sensitivity analyis....\n")
+    print("\n______________________________________________\nstarting for-loop....\n")
 
     for i in range(10000):
-        solution = run_model(parameter_values)
+        solution = run_model(parameter_values, y_bc, orte, int_method, L)
         print('Run: ' + str(i) + ', Prozent: ' + str(round(i / 10000 * 100, 3)) + ' %')
 
 
