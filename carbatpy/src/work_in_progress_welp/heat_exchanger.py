@@ -9,7 +9,7 @@ import numpy as np
 import CoolProp.CoolProp as CP
 from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
-import fluid_properties_rp as fprop
+from .. import fluid_properties_rp as fprop
 from scipy.optimize import root
 import ht as ht
 

@@ -2,7 +2,7 @@
 heat transfer calculation for heat exchanger
 '''
 # import libraries
-import fluid_properties_rp as fprop
+from .. import fluid_properties_rp as fprop
 import numpy as np
 import ht as ht
 
