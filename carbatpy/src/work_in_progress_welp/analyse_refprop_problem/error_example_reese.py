@@ -24,15 +24,21 @@ def diffeq_enthalpy_ivp(ort, y, input_values, wf='Isobutane', sf='Water'):
     '''
     Differential equations of enthalpy for working and secondary fluid in an double-pipe heat exchanger.
     '''
+    global counter_call_refprop
     p_wf_0, p_sf_0, di, ds, dh, da, area_wf, area_sf, lam_rohr, m_wf, m_sf, z, T_sf_0 = input_values
     h_wf, h_sf = y
 
     # Stoffeigenschaften der Fluide: Dichte, Wärmekapazität, kinematische Viskosität, Thermische Leitfähigkeit, Prandtl-Zahl, Temperatur
     Zustand_wf_x = RP.REFPROPdll(wf, "PH", "D;CP;VIS;TCX;PRANDTL;T", MASS_BASE_SI, 0, 0, 10e5, h_wf, [0]).Output[0:6]
-    Zustand_sf_x = RP.REFPROPdll(sf, "PH", "D;CP;VIS;TCX;PRANDTL;T", MASS_BASE_SI, 0, 0, 1e5, h_sf, [0]).Output[0:6]
-    if Zustand_sf_x[0] == -9999990.:
+    counter_call_refprop += 1
+    if Zustand_wf_x[0] == -9999990.:
+        print(f"counter_refprop: {counter_call_refprop}")
         raise ValueError(f"Unplausible state in Zustand_wf_x: {Zustand_wf_x}")
+
+    Zustand_sf_x = RP.REFPROPdll(sf, "PH", "D;CP;VIS;TCX;PRANDTL;T", MASS_BASE_SI, 0, 0, 1e5, h_sf, [0]).Output[0:6]
+    counter_call_refprop += 1
     if Zustand_sf_x[0] == -9999990.:
+        print(f"counter_refprop: {counter_call_refprop}")
         raise ValueError(f"Unplausible state in Zustand_sf_x: {Zustand_sf_x}")
 
     # Temperaturen der Fluide in: K
@@ -58,6 +64,7 @@ def diffeq_enthalpy_ivp(ort, y, input_values, wf='Isobutane', sf='Water'):
 if __name__ == "__main__":
     sf = "Water"
     wf = "Isobutane"
+
 
     int_method = 'BDF'
     L = 2
@@ -93,14 +100,17 @@ if __name__ == "__main__":
     h_wf_sat = RP.REFPROPdll(wf, "PQ", "H", MASS_BASE_SI, 0, 0, p_wf_0, 1, z).Output[0]
     h_sf_0 = RP.REFPROPdll(sf, "PT", "H", MASS_BASE_SI, 0, 0, p_sf_0, T_sf_0, [0]).Output[0]
     y_bc = [h_wf_sat, h_sf_0]
-
+    counter_call_refprop = 5        # 5 times called already
     orte = np.linspace(0, L, 100)  # Definition der Stützstellen
     print("\n______________________________________________\nstarting for-loop....\n")
 
-    for i in range(10000):
+    n = 10000
+    for i in range(n):
         res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort, y, parameter_values, wf=wf, sf=sf), (0, L),
                         y_bc, t_eval=orte, method=int_method)
-        print('Run: ' + str(i) + ', Prozent: ' + str(round(i / 10000 * 100, 3)) + ' %')
+        if (i % ( n / 100)) == 0:
+            print('Run: ' + str(i) + ', Prozent: ' + str(round(i / n * 100, 3)) + ' %')
+
 
 
 
