@@ -18,18 +18,18 @@ def get_state(p, q, fluid, z=[1.0]):
 
 def try_fun(x, T, p, q, fluid, z=[1.0]):
     global counter_refprop
-    rho = RP.REFPROPdll(fluid, "PQ", "D", MASS_BASE_SI, 0, 0, p, q, z).Output[0]
+    ans = RP.REFPROPdll(fluid, "PQ", "D", MASS_BASE_SI, 0, 0, p, q, z).Output
     counter_refprop +=1
-    if rho == -9999990.:
+    if ans[0] == -9999990.:
         print(f"counter_refprop: {counter_refprop}")
         raise ValueError("Unplausible state")
-    return -0.5 * rho * T
+    return -0.5 * ans[0] * T
 
 counter_refprop = 0
 count = 0
 for i in range(call):
     count +=1
-    sol = solve_ivp(try_fun, [0,100], [4], args=[1e6, 0.5, "water"])
+    sol = solve_ivp(lambda x,T: try_fun(x, T, 1e6, 0.5, "water", [1.0]), [0,100], [4])
     if (count%(call/100)) == 0:
         print(f"{count*100/call} %")
 
