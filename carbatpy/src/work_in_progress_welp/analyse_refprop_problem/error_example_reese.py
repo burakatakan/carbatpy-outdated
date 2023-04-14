@@ -55,8 +55,8 @@ def diffeq_enthalpy_ivp(ort, y, input_values, wf='Isobutane', sf='Water'):
     dQdx_R = (T_wf - T_sf) / R
 
     # DGL
-    dhwf = 100
-    dhsf = 100
+    dhwf = 1 / (m_wf) * dQdx_R
+    dhsf = 1 / (m_sf) * dQdx_R
 
     return [dhwf, dhsf]
 
