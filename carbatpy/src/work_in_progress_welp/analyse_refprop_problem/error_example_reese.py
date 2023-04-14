@@ -99,9 +99,11 @@ if __name__ == "__main__":
     n = 10000
     for i in range(n):
         res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort, y, parameter_values, wf, sf), (0, L),
-                        y_bc)
+                        y_bc, t_eval=orte)
         if (i % ( n / 100)) == 0:
             print('Run: ' + str(i) + ', Prozent: ' + str(round(i / n * 100, 3)) + ' %')
+
+    print(f"Script finished successfully after {counter_call_refprop} refprop calls")
 
 
 
