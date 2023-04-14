@@ -9,7 +9,7 @@ RP.SETPATHdll(os.environ['RPPREFIX'])
 MASS_BASE_SI = RP.GETENUMdll(0, "MASS BASE SI").iEnum
 SI = RP.GETENUMdll(0, "SI").iEnum
 
-call = int(1e6)
+call = int(1e4)
 checkpoints = np.linspace(0, call, 101)
 
 def get_state(p, q, fluid, z=[1.0]):
