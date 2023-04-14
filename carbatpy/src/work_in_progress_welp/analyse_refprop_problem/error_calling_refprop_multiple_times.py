@@ -18,8 +18,9 @@ def get_state(p, q, fluid, z=[1.0]):
 
 def try_fun(x, T, p, q, fluid, z=[1.0]):
     global counter_refprop
-    rho = RP.REFPROPdll(fluid, "PQ", "D", MASS_BASE_SI, 0, 0, p, q, z).Output[0]
-    h = RP.REFPROPdll(fluid, "PQ", "H", MASS_BASE_SI, 0, 0, p, q, z).Output[0]
+    res = RP.REFPROPdll(fluid, "PQ", "D;CP;VIS;TCX;PRANDTL;T;H", MASS_BASE_SI, 0, 0, p, q, z).Output[0:7]
+    h = res[6]
+    rho = res[0]
     counter_refprop +=1
     if rho == -9999990.:
         print(f"counter_refprop: {counter_refprop}")
