@@ -25,7 +25,7 @@ def diffeq_enthalpy_ivp(ort, y, input_values, wf='Isobutane', sf='Water'):
     Differential equations of enthalpy for working and secondary fluid in an double-pipe heat exchanger.
     '''
     global counter_call_refprop
-    p_wf_0, p_sf_0, di, ds, dh, da, area_wf, area_sf, lam_rohr, m_wf, m_sf, z, T_sf_0 = input_values
+    p_wf_0, p_sf_0, di, ds, area_wf, area_sf, lam_rohr, m_wf, m_sf, z, T_sf_0 = input_values
     h_wf, h_sf = y
 
     # Stoffeigenschaften der Fluide: Dichte, Wärmekapazität, kinematische Viskosität, Thermische Leitfähigkeit, Prandtl-Zahl, Temperatur
@@ -74,8 +74,6 @@ if __name__ == "__main__":
     dT_max = 10
     m_wf = 10e-3
     m_sf = 40e-3
-    c_wf = 1
-    c_sf = 1
 
     lam_rohr = 50
     ds = 1e-3
@@ -84,30 +82,24 @@ if __name__ == "__main__":
     T_wf_sat = RP.REFPROPdll(wf, "PQ", "T", MASS_BASE_SI, 0, 0, p_wf_0, 1, z).Output[0]
     T_sf_0 = T_wf_sat - dT_max
 
-    roh_wf = RP.REFPROPdll(wf, "PQ", "D", MASS_BASE_SI, 0, 0, p_wf_0, 1, z).Output[0]
-    roh_sf = RP.REFPROPdll(sf, "PT", "D", MASS_BASE_SI, 0, 0, p_wf_0, T_sf_0, [0]).Output[0]
-
-    area_wf = m_wf / (c_wf * roh_wf)
-    area_sf = m_sf / (c_sf * roh_sf)
+    area_wf = 0.000247
+    area_sf = 4.1016e-5
 
     di = np.sqrt(4 * area_wf / np.pi)
-    da = di + 2 * ds
-    dA = np.sqrt(4 * area_sf / np.pi + da ** 2)
-    dh = dA - da
 
-    parameter_values = [p_wf_0, p_sf_0, di, ds, dh, da, area_wf, area_sf, lam_rohr, m_wf, m_sf, z, T_sf_0]
+    parameter_values = [p_wf_0, p_sf_0, di, ds, area_wf, area_sf, lam_rohr, m_wf, m_sf, z, T_sf_0]
 
     h_wf_sat = RP.REFPROPdll(wf, "PQ", "H", MASS_BASE_SI, 0, 0, p_wf_0, 1, z).Output[0]
     h_sf_0 = RP.REFPROPdll(sf, "PT", "H", MASS_BASE_SI, 0, 0, p_sf_0, T_sf_0, [0]).Output[0]
     y_bc = [h_wf_sat, h_sf_0]
-    counter_call_refprop = 5        # 5 times called already
+    counter_call_refprop = 3        # 5 times called already
     orte = np.linspace(0, L, 100)  # Definition der Stützstellen
     print("\n______________________________________________\nstarting for-loop....\n")
 
     n = 10000
     for i in range(n):
-        res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort, y, parameter_values, wf=wf, sf=sf), (0, L),
-                        y_bc, t_eval=orte, method=int_method)
+        res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort, y, parameter_values, wf, sf), (0, L),
+                        y_bc)
         if (i % ( n / 100)) == 0:
             print('Run: ' + str(i) + ', Prozent: ' + str(round(i / n * 100, 3)) + ' %')
 
