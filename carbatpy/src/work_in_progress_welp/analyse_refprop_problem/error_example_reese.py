@@ -99,7 +99,9 @@ if __name__ == "__main__":
     n = 10000
     for i in range(n):
         res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort, y, parameter_values, wf, sf), (0, L),
-                        y_bc, t_eval=orte, method="BDF")
+                        y_bc, t_eval=orte, method="RK45")
+        if res.message != "The solver successfully reached the end of the integration interval.":
+            raise ValueError("The solver didn't converge.")
         if (i % ( n / 100)) == 0:
             print('Run: ' + str(i) + ', Prozent: ' + str(round(i / n * 100, 3)) + ' %')
 
