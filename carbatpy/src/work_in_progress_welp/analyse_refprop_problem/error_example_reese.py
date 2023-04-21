@@ -16,8 +16,11 @@ from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
 RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
 RP.SETPATHdll(os.environ['RPPREFIX'])
+RP.SETFLUIDSdll("Water")
+SP = REFPROPFunctionLibrary(os.environ['RPPREFIX']) #secondary fluid
+SP.SETPATHdll(os.environ['RPPREFIX'])
+SP.SETFLUIDSdll("Isobutane")
 MASS_BASE_SI = RP.GETENUMdll(0, "MASS BASE SI").iEnum
-SI = RP.GETENUMdll(0, "SI").iEnum
 
 
 def diffeq_enthalpy_ivp(ort, y, input_values, wf='Isobutane', sf='Water'):
@@ -29,7 +32,7 @@ def diffeq_enthalpy_ivp(ort, y, input_values, wf='Isobutane', sf='Water'):
     h_wf, h_sf = y
 
     # Stoffeigenschaften der Fluide: Dichte, Wärmekapazität, kinematische Viskosität, Thermische Leitfähigkeit, Prandtl-Zahl, Temperatur
-    result = RP.REFPROPdll(wf, "PH", "D;CP;VIS;TCX;PRANDTL;T", MASS_BASE_SI, 0, 0, 10e5, h_wf, [0])
+    result = RP.REFPROPdll("", "PH", "D;CP;VIS;TCX;PRANDTL;T", MASS_BASE_SI, 0, 0, 10e5, h_wf, [0])
     Zustand_wf_x = result.Output[0:6]
     counter_call_refprop += 1
     if Zustand_wf_x[0] == -9999990.:
@@ -38,7 +41,7 @@ def diffeq_enthalpy_ivp(ort, y, input_values, wf='Isobutane', sf='Water'):
         print(f"error flag: {result.ierr} error string: {result.herr}")
         raise ValueError(f"Unplausible state in Zustand_wf_x: {Zustand_wf_x}")
 
-    Zustand_sf_x = RP.REFPROPdll(sf, "PH", "D;CP;VIS;TCX;PRANDTL;T", MASS_BASE_SI, 0, 0, 1e5, h_sf, [0]).Output[0:6]
+    Zustand_sf_x = SP.REFPROPdll("", "PH", "D;CP;VIS;TCX;PRANDTL;T", MASS_BASE_SI, 0, 0, 1e5, h_sf, [0]).Output[0:6]
     counter_call_refprop += 1
     if Zustand_sf_x[0] == -9999990.:
         print(f"counter_refprop: {counter_call_refprop}")
@@ -83,7 +86,7 @@ if __name__ == "__main__":
     ds = 1e-3
     z = [0]
 
-    T_wf_sat = RP.REFPROPdll(wf, "PQ", "T", MASS_BASE_SI, 0, 0, p_wf_0, 1, z).Output[0]
+    T_wf_sat = RP.REFPROPdll("", "PQ", "T", MASS_BASE_SI, 0, 0, p_wf_0, 1, z).Output[0]
     T_sf_0 = T_wf_sat - dT_max
 
     area_wf = 0.000247
@@ -93,8 +96,8 @@ if __name__ == "__main__":
 
     parameter_values = [p_wf_0, p_sf_0, di, ds, area_wf, area_sf, lam_rohr, m_wf, m_sf, z, T_sf_0]
 
-    h_wf_sat = RP.REFPROPdll(wf, "PQ", "H", MASS_BASE_SI, 0, 0, p_wf_0, 1, z).Output[0]
-    h_sf_0 = RP.REFPROPdll(sf, "PT", "H", MASS_BASE_SI, 0, 0, p_sf_0, T_sf_0, [0]).Output[0]
+    h_wf_sat = RP.REFPROPdll("", "PQ", "H", MASS_BASE_SI, 0, 0, p_wf_0, 1, z).Output[0]
+    h_sf_0 = SP.REFPROPdll("", "PT", "H", MASS_BASE_SI, 0, 0, p_sf_0, T_sf_0, [0]).Output[0]
     y_bc = [h_wf_sat, h_sf_0]
     counter_call_refprop = 3        # 5 times called already
     orte = np.linspace(0, L, 100)  # Definition der Stützstellen
@@ -103,7 +106,7 @@ if __name__ == "__main__":
     n = 10000
     for i in range(n):
         res = solve_ivp(lambda ort, y: diffeq_enthalpy_ivp(ort, y, parameter_values, wf, sf), (0, L),
-                        y_bc, t_eval=orte, method="Radau")
+                        y_bc, t_eval=orte, method="DOP853")
         if res.message != "The solver successfully reached the end of the integration interval.":
             raise ValueError("The solver didn't converge.")
         if (i % ( n / 100)) == 0:
