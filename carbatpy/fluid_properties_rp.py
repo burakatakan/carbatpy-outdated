@@ -36,7 +36,27 @@ else:
 __Tenv__ = 283.15  # Temp. of the environment in K
 __penv__ = 1.013e5  # Pressure of the environment in Pa
 
+def setRPFluid(fluid):
+    """
+    A new instnce of Refpropdll for the given fluid. It can then be called using fluid =""
 
+    Parameters
+    ----------
+    fluid : string
+        fluid (mixture) name, as described in REFPROP.
+
+    Returns
+    -------
+    SP : REFPROP Instance
+        for further usage.
+
+    """
+    SP = REFPROPFunctionLibrary(os.environ['RPPREFIX']) #secondary fluid
+    SP.SETPATHdll(os.environ['RPPREFIX'])
+    SP.SETFLUIDSdll(fluid)
+    return SP
+    
+    
 def mdot_area_function(m_dot, diameter):
     """
     Calculate the mass flux through a tube and the orthogonal area 
@@ -61,8 +81,8 @@ def mdot_area_function(m_dot, diameter):
     return m_dot_area, area
 
 
-def hp_exergy(h, p, fluid, T_env=__Tenv__, p_env=__penv__, props=_props,
-              composition=[1.0]):
+def hp_exergy(h, p, fluid="", T_env=__Tenv__, p_env=__penv__, props=_props,
+              composition=[1.0], RP=RP):
     """
     calculate the specific exergy of a fluid from given enthalpy and pressure
 
@@ -83,6 +103,8 @@ def hp_exergy(h, p, fluid, T_env=__Tenv__, p_env=__penv__, props=_props,
     composition : depends on model, optional
         mole fractions of the different compounds, should add to 1. 
         The default is [1.0].
+    RP : REFPROP Instance as set with setRPfluid
+        if set, the fluid name does not have to be passed again, instead flud ="" works.
 
     Returns
     -------
@@ -101,7 +123,7 @@ def hp_exergy(h, p, fluid, T_env=__Tenv__, p_env=__penv__, props=_props,
     return ex
 
 
-def hp(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
+def hp(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, RP=RP):
     """
     Properties needed for integration at given  values of pressure 
     and specific enthalpy.
@@ -118,7 +140,10 @@ def hp(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
         (not yet implemented for REFPROP)
         with option 1 : T,p,h,v,s,x is calculated
     units: integer
-        units in Refprop (imposrtant: must be SI and mass based (kg, Pa etc.))
+        units in Refprop (imposrtant: must be SI and mass based (kg, Pa etc.))      
+    RP : REFPROP Instance as set with setRPfluid
+        if set, the fluid name does not have to be passed again, instead flud ="" works.
+
 
     Returns
     -------
@@ -162,7 +187,7 @@ def hp(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
     return np.array(alle)
 
 
-def uv(u, v, fluid, composition=[1.0], option=1, units=_units, props=_props):
+def uv(u, v, fluid="", composition=[1.0], option=1, units=_units, props=_props, RP=RP):
     """
     Properties needed for integration at given  values of internal energy 
     and specific volume.
@@ -179,7 +204,9 @@ def uv(u, v, fluid, composition=[1.0], option=1, units=_units, props=_props):
         (not yet implemented for REFPROP)
         with option 1 : T,p,h,v,s,x is calculated
     units: integer
-        units in Refprop (imposrtant: must be SI and mass based (kg, Pa etc.))
+        units in Refprop (important: must be SI and mass based (kg, Pa etc.))
+    RP : REFPROP Instance as set with setRPfluid
+        if set, the fluid name does not have to be passed again, instead flud ="" works.
 
     Returns
     -------
@@ -223,7 +250,7 @@ def uv(u, v, fluid, composition=[1.0], option=1, units=_units, props=_props):
     return np.array(alle)
 
 
-def sp(s, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
+def sp(s, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, RP=RP):
     """
     Properties needed for integration at given s and p, single phase.
 
@@ -241,6 +268,9 @@ def sp(s, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
         with option 1 : T,p,h,v,s,x is calculated
     units: integer
         units in Refprop (imposrtant: must be SI and mass based (kg, Pa etc.))
+    RP : REFPROP Instance as set with setRPfluid
+        if set, the fluid name does not have to be passed again, instead flud ="" works.
+
 
     Returns
     -------
@@ -285,7 +315,7 @@ name_properties = [
 ]
 
 
-def hp_v(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
+def hp_v(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, RP=RP):
     """ 
     Vectorization of the single phase properties function, see: hp
     
@@ -305,8 +335,8 @@ def hp_v(h, p, fluid, composition=[1.0], option=1, units=_units, props=_props):
     return alle
 
 
-def tp(temp, p,  fluid, composition=[1.0], option=1, units=_units,
-       props=_props):
+def tp(temp, p,  fluid="", composition=[1.0], option=1, units=_units,
+       props=_props, RP=RP):
     """
     Properties needed for integration at given temperature and pressure, 
     single phase. 
@@ -321,6 +351,9 @@ def tp(temp, p,  fluid, composition=[1.0], option=1, units=_units,
         pressure in Pa.
 
     fluid :   an AbstractState in coolprop.
+    RP : REFPROP Instance as set with setRPfluid
+    if set, the fluid name does not have to be passed again, instead flud ="" works.
+
 
     Returns
     -------
@@ -372,8 +405,8 @@ def tp(temp, p,  fluid, composition=[1.0], option=1, units=_units,
 #  below must be checked!
 
 
-def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
-               props=_props):
+def p_prop_sat(p,  fluid="", composition=[1.0], option=1, units=_units,
+               props=_props, RP=RP):
     """
     Saturation state properties at given p for a certain fluid (mixture).
 
@@ -383,6 +416,10 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
         saturation pressure in Pa.
 
     fluid :   an AbstractState in coolprop or a fluid in REFPROP.
+    RP : REFPROP Instance as set with setRPfluid
+        if set, the fluid name does not have to be passed again, 
+        instead flud ="" works.
+
 
     Returns
     -------
@@ -429,8 +466,8 @@ def p_prop_sat(p,  fluid, composition=[1.0], option=1, units=_units,
     return np.array(vap_liq)
 
 
-def T_prop_sat(temp,  fluid, composition=[1.0], option=1, units=_units,
-               props=_props):
+def T_prop_sat(temp,  fluid="", composition=[1.0], option=1, units=_units,
+               props=_props, RP=RP):
     """
     Saturation state properties at given temperature for a certain fluid 
     (mixture).
@@ -442,6 +479,10 @@ def T_prop_sat(temp,  fluid, composition=[1.0], option=1, units=_units,
 
     fluid :   depends
         an AbstractState in coolprop or a fluid in REFPROP.
+    RP : REFPROP Instance as set with setRPfluid
+        if set, the fluid name does not have to be passed again, 
+        instead flud ="" works.
+
 
     Returns
     -------
@@ -492,8 +533,8 @@ def T_prop_sat(temp,  fluid, composition=[1.0], option=1, units=_units,
     return np.array(vap_liq)
 
 
-def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
-            props=_props):
+def prop_pq(p, q, fluid="", composition=[1.0], option=1, units=_units,
+            props=_props, RP=RP):
     """
     Saturation state properties at given pressure  and quality for a certain 
     fluid (mixture).
@@ -513,6 +554,10 @@ def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
 
     units: integer
         select units (SI of property model, for REFPROP: 21)
+    RP : REFPROP Instance as set with setRPfluid
+        if set, the fluid name does not have to be passed again, 
+        instead flud ="" works.
+
 
     Returns
     -------
@@ -548,8 +593,8 @@ def prop_pq(p, q, fluid, composition=[1.0], option=1, units=_units,
     
     return np.array(alle)
 
-def prop_Tq(T, q, fluid, composition=[1.0], option=1, units=_units,
-            props=_props):
+def prop_Tq(T, q, fluid="", composition=[1.0], option=1, units=_units,
+            props=_props, RP=RP):
     """
     Saturation state properties at given pressure  and quality for a certain 
     fluid (mixture).
@@ -568,6 +613,9 @@ def prop_Tq(T, q, fluid, composition=[1.0], option=1, units=_units,
 
     units: integer
         select units (SI of property model, for REFPROP: 21)
+    RP : REFPROP Instance as set with setRPfluid
+        if set, the fluid name does not have to be passed again, instead flud ="" works.
+
 
     Returns
     -------
@@ -631,25 +679,29 @@ if __name__ == "__main__":
     elif _props == "REFPROP":
         # Sekundärfluid --------------------------------
         fluid_s = "Propane * Pentane"
+        wf = setRPFluid(fluid_s)
+        fluid_s =""
         comp = [.4, 0.6]
         #secondary_fluid = CP.AbstractState("TTSE&HEOS", fluid_s)
         # interesting, when using "BICUBIC&HEOS" the exergy of the ambient state is 0.15!
         t0 = time()
-        state_data = tp(temp_0_s, p_sur, fluid_s, composition=comp)
+        state_data = tp(temp_0_s, p_sur, fluid_s, composition=comp,RP=wf)
         print(state_data, time()-t0)
-        print(hp(state_data[2], p_sur, fluid_s, composition=comp))
+        print(hp(state_data[2], p_sur, fluid_s, composition=comp, RP=wf))
         fluid_s = "Water"
+        wf = setRPFluid(fluid_s)
+        fluid_s =""
         t0 = time()
-        alles = p_prop_sat(p_0, fluid_s, option=0)
+        alles = p_prop_sat(p_0, fluid_s, option=0, RP=wf)
         print("Water with transport", p_prop_sat(
-            p_0, fluid_s, option=0), "\n", time() - t0)
+            p_0, fluid_s, option=0, RP=wf), "\n", time() - t0)
         print("Water with error(sat)", hp(
-            alles[0][2], p_sur, fluid_s, option=0))
+            alles[0][2], p_sur, fluid_s, option=0, RP=wf))
         print("Water single phase without error", hp(
-            alles[0][2] + 1e3, p_sur, fluid_s, option=0))
+            alles[0][2] + 1e3, p_sur, fluid_s, option=0, RP=wf))
     # h_0_s = tp(temp_0_s, p_sur,  secondary_fluid, props=_props)[2]
     # h_end = CP.PropsSI('H', 'P', p_sur, 'T', temp_0_s, fluid_a)
     # ex1 = hp_exergy(h_0_s, p_sur, secondary_fluid, props=_props)
     # ex2 = hp_exergy(h_0, p_sur, working_fluid, props=_props)
     # print( "Exergies (J/kg):", ex1, ex2)
-    print(p_prop_sat(p_0, fluid_s, composition=comp, props=_props))
+    print(p_prop_sat(p_0, fluid_s, composition=comp, props=_props, RP=wf))
