@@ -31,6 +31,7 @@ from time import time
 
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
 _props = "REFPROP"  # or "CoolProp"
+# order for coolprop,alle_0:[_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]"
 if _props == "REFPROP":
     try:
         RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
@@ -191,8 +192,7 @@ def hp(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
 
         if option == 0:
             print("warning, check variables order")
-            alle = [_temp, p, x, h,  s, rho, mu,
-                    cp, lambda_s, phase, prandtl]
+            alle = [_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]
         elif option == 1:
             alle = [_temp, p,  h, 1/rho, s, x]
     return np.array(alle)
@@ -254,8 +254,7 @@ def uv(u, v, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
         # _temp, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
 
         # if option == 0:
-        #     alle = [_temp, p, x, h,  s, rho, mu,
-        #             cp, lambda_s, phase, prandtl]
+        #     alle = [_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]
         # elif option == 1:
         #     alle = [_temp, p,  h, 1/rho, s, x]
     return np.array(alle)
@@ -313,8 +312,7 @@ def sp(s, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
 
         if option == 0:
             print("warning, check variables")
-            alle = [_temp, p, x, h,  s, rho, mu,
-                    cp, lambda_s, phase, prandtl]
+            alle = [_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]
         elif option == 1:
             alle = [_temp, p,  h, 1/rho, s, x]
     return np.array(alle)
@@ -409,8 +407,8 @@ def tp(temp, p,  fluid="", composition=[1.0], option=1, units=_units,
 
         if option == 0:
             print("warning, check variables")
-            alle = np.array([temp, p, x, h,  s, rho, mu,
-                             cp, lambda_s, phase, prandtl])
+            alle = np.array([temp, p,  h, 1/ rho, s,x,cp, mu,  \
+                             lambda_s, prandtl, phase])
         elif option == 1:
             return [temp, p,  h, 1/rho, s,  x]
 
@@ -468,8 +466,8 @@ def p_prop_sat(p,  fluid="", composition=[1.0], option=1, units=_units,
             temp, h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
 
             if option == 0:
-                alle = [temp, p, x, h,  s, rho, mu,
-                        cp, lambda_s, phase, prandtl]
+                alle = [temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, 
+                        prandtl, phase]
                 print("warning, check variables")
             elif option == 1:
                 alle = [temp, p,  h, 1/rho, s,  x]
@@ -535,8 +533,8 @@ def T_prop_sat(temp,  fluid="", composition=[1.0], option=1, units=_units,
             p, h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
 
             if option == 0: # wrong order must be checked
-                alle = [temp, p, x, h,  s, rho, mu,
-                        cp, lambda_s, phase, prandtl]
+                alle = [temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, 
+                        prandtl, phase]
                 print("warning, check variables")
 
             elif option == 1:
@@ -600,8 +598,8 @@ def prop_pq(p, q, fluid="", composition=[1.0], option=1, units=_units,
         temp, h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
 
         if option == 0:
-            alle = np.array([temp, p, x, h,  s, rho, mu,
-                             cp, lambda_s, phase, prandtl])
+            alle = np.array([temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, 
+                             prandtl, phase])
         elif option == 1:
             alle = [temp, p,  h, 1/rho, s,  x]
     
@@ -652,14 +650,15 @@ def prop_Tq(T, q, fluid="", composition=[1.0], option=1, units=_units,
 
     elif props == "CoolProp":
         fluid.update(CP.TQ_INPUTS, T, q)
-        reihe = [CP.iP, CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
+        reihe = [CP.iP, CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, 
+                 CP.iPrandtl, CP.iPhase,
                  CP.iconductivity, CP.iCpmass, CP.iviscosity]
         props = [fluid.keyed_output(k) for k in reihe]
         p, h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
 
         if option == 0:
-            alle = np.array([T, p, x, h,  s, rho, mu,
-                             cp, lambda_s, phase, prandtl])
+            alle = np.array([T, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, 
+                             prandtl, phase])
         elif option == 1:
             alle = [T, p,  h, 1/rho, s,  x]
     print(props)
