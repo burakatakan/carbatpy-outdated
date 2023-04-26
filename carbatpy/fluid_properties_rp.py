@@ -190,6 +190,7 @@ def hp(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
         _temp, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
 
         if option == 0:
+            print("warning, check variables order")
             alle = [_temp, p, x, h,  s, rho, mu,
                     cp, lambda_s, phase, prandtl]
         elif option == 1:
@@ -311,6 +312,7 @@ def sp(s, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
         _temp, x, h, rho, prandtl, phase, lambda_s, cp, mu = props[:]
 
         if option == 0:
+            print("warning, check variables")
             alle = [_temp, p, x, h,  s, rho, mu,
                     cp, lambda_s, phase, prandtl]
         elif option == 1:
@@ -406,6 +408,7 @@ def tp(temp, p,  fluid="", composition=[1.0], option=1, units=_units,
         h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
 
         if option == 0:
+            print("warning, check variables")
             alle = np.array([temp, p, x, h,  s, rho, mu,
                              cp, lambda_s, phase, prandtl])
         elif option == 1:
@@ -467,7 +470,7 @@ def p_prop_sat(p,  fluid="", composition=[1.0], option=1, units=_units,
             if option == 0:
                 alle = [temp, p, x, h,  s, rho, mu,
                         cp, lambda_s, phase, prandtl]
-
+                print("warning, check variables")
             elif option == 1:
                 alle = [temp, p,  h, 1/rho, s,  x]
 
@@ -531,9 +534,10 @@ def T_prop_sat(temp,  fluid="", composition=[1.0], option=1, units=_units,
             props = [fluid.keyed_output(k) for k in reihe]
             p, h, x, s, rho, prandtl, phase, lambda_s, cp, mu = props[:]
 
-            if option == 0:
+            if option == 0: # wrong order must be checked
                 alle = [temp, p, x, h,  s, rho, mu,
                         cp, lambda_s, phase, prandtl]
+                print("warning, check variables")
 
             elif option == 1:
                 alle = [temp, p,  h, 1/rho, s,  x]

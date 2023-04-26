@@ -200,6 +200,8 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition=[1.0], WF=WF,
     """
     problem = 0
     druck = False
+    prop_input = [working_fluid, composition, 1, _units, _props, WF] 
+    # ^ all often needed input for the propertties of the working fluid
     if bounds!= None:
         inside = check_bound(p, bounds)
     else:
@@ -211,35 +213,27 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition=[1.0], WF=WF,
         diff = np.zeros((3))
         q_w = np. zeros((4))
         try:
-            state[0, :] = fprop.prop_pq(p[0], 1, working_fluid, composition, 
-                                    option=1, units =_units, props=_props, RP=WF)  # vor dem Kompressor
+            state[0, :] = fprop.prop_pq(p[0], 1, *prop_input)  # vor dem Kompressor
             if state[0, 0] >= T_s[0]: problem =1
         except:
-            state[0, :] = fprop.prop_pq(1.3e5, 1, working_fluid, composition, 
-                                    option=1, units =_units, props=_props, RP=WF)  # vor dem Kompressor
+            state[0, :] = fprop.prop_pq(1.3e5, 1, *prop_input)  # vor dem Kompressor
             print("Fehler!:", p,eta, U, A, T_s, optim)
             
         # Kompressor
-        state[1, :] = fprop.sp(state[0, 4], p[1], working_fluid, composition, 
-                                option=1, units =_units, props=_props, RP=WF)  # isentropic
+        state[1, :] = fprop.sp(state[0, 4], p[1], *prop_input)  # isentropic
         q_w[0] = (state[1, 2] - state[0, 2]) / eta
         
         # kondensatoreintritt:
-        state[2, :] = fprop.hp(state[0, 2] + q_w[0], p[1],  working_fluid, 
-                               composition, 
-                                option=1, units =_units, props=_props, RP=WF)
+        state[2, :] = fprop.hp(state[0, 2] + q_w[0], p[1], *prop_input)
         if state[2, 0] < T_s[1]: problem = 2
         # print ("Problem:", problem, p)
-        state[6, :] = fprop.prop_pq(p[1], 1, working_fluid, composition, 
-                                option=1, units =_units, props=_props, RP=WF)  # Taupunkt
+        state[6, :] = fprop.prop_pq(p[1], 1, *prop_input)  # Taupunkt
         if state[6, 0] <= T_s[1]: problem = 3
         q_w[1] = (state[6, 2] - state[2, 2])  # Waermeuebtragung bis dahin
 
-        state[7, :] = fprop.prop_pq(p[1], 0, working_fluid, composition, 
-                                option=1, units =_units, props=_props, RP=WF)  # gerade kondensiert, Wunsch
+        state[7, :] = fprop.prop_pq(p[1], 0, *prop_input)  # gerade kondensiert, Wunsch
         q_w[2] = state[7, 2] - state[6, 2]  # isotherme Kondensation
-        state[3, :] = fprop.hp(state[7, 2], p[0], working_fluid, composition, 
-                                option=1, units =_units, props=_props, RP=WF)  # hinter Drossel
+        state[3, :] = fprop.hp(state[7, 2], p[0], *prop_input)  # hinter Drossel
         q_w[3] = state[0, 2] - state[3, 2]  # Verdampfer
         # - heat transfer:
         q_v = U[0] * A[0] * (T_s[0] - state[0, 0]) / m_dot  # isotherm Verdampfer
