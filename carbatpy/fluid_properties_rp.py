@@ -8,6 +8,16 @@ saturated regime. For the ouput it can be mostly chosen, whether transport
 properties are als returned, besides the thermodynamiic properties. 
 Functions are also vectorized by hand (Name:"..._v). Physical exergies 
 can be calculated for a state of known h and p.
+
+For REFPROP two usages of hp, Tp etc. are possible:
+    a) passing a string with the fluid name and compositon, properties etc. 
+    (This sometimes leads to trouble, when having many function calls >1E5 and
+     it is slower). 
+    For this the initially generated instance (RP) will be used throughout.
+    b) first calling setPRFluid with the fluid name string. This generates an 
+    instance of REFPROP for this fluid (mixture), which has to be passed to the 
+    calls of hp, Tp etc. together with an empty string as fluid name.
+    
 Standard units: SI (J, kg, Pa, K,...)
 
 """
@@ -677,7 +687,7 @@ if __name__ == "__main__":
         h_0_s = tp(temp_0_s, p_sur,  secondary_fluid, props=_props)[2]
         h_end = CP.PropsSI('H', 'P', p_sur, 'T', temp_0_s, fluid_a)
     elif _props == "REFPROP":
-        # Sekundärfluid --------------------------------
+        # Fluid --------------------------------
         fluid_s = "Propane * Pentane"
         wf = setRPFluid(fluid_s)
         fluid_s =""
@@ -688,8 +698,10 @@ if __name__ == "__main__":
         state_data = tp(temp_0_s, p_sur, fluid_s, composition=comp,RP=wf)
         print(state_data, time()-t0)
         print(hp(state_data[2], p_sur, fluid_s, composition=comp, RP=wf))
+        
+        # new Fluid:
         fluid_s = "Water"
-        wf = setRPFluid(fluid_s)
+        wf = setRPFluid(fluid_s)  # new instance !
         fluid_s =""
         t0 = time()
         alles = p_prop_sat(p_0, fluid_s, option=0, RP=wf)
@@ -698,10 +710,13 @@ if __name__ == "__main__":
         print("Water with error(sat)", hp(
             alles[0][2], p_sur, fluid_s, option=0, RP=wf))
         print("Water single phase without error", hp(
-            alles[0][2] + 1e3, p_sur, fluid_s, option=0, RP=wf))
+            alles[0][2] + 1e3, p_sur, fluid_s, option=0, RP=wf),"\n\n")
     # h_0_s = tp(temp_0_s, p_sur,  secondary_fluid, props=_props)[2]
     # h_end = CP.PropsSI('H', 'P', p_sur, 'T', temp_0_s, fluid_a)
     # ex1 = hp_exergy(h_0_s, p_sur, secondary_fluid, props=_props)
     # ex2 = hp_exergy(h_0, p_sur, working_fluid, props=_props)
     # print( "Exergies (J/kg):", ex1, ex2)
-    print(p_prop_sat(p_0, fluid_s, composition=comp, props=_props, RP=wf))
+    print(p_prop_sat(p_0, fluid_s, composition=comp, props=_props, RP=wf), "\n")
+    
+    # Example for an alternative call:
+    print("\n Alternative: ", p_prop_sat(p_0, "water", composition=comp, props=_props))
