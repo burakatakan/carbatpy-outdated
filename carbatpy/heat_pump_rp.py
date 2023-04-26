@@ -280,7 +280,7 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition=[1.0], WF=WF,
 
 if __name__ == "__main__":
     diameter = 15e-3  # tube diameter in m
-    schleif = False
+    schleif = True  # calculation for different heat exchanger areas?
     optimierung = False
     U = np.array([1300, 250, 1300])
     areas = np.array([(12 * np.pi * diameter), (28 * np.pi * diameter)]) * .5 # sehr nichtlinear!
@@ -338,41 +338,43 @@ if __name__ == "__main__":
         
         
             
-    # if schleif:
-    #     aa = []
-    #     for a_factor in np.arange(1, 100, .75):
-    #         areas = np.array([(1.9 * np.pi * 10e-3), (1 * np.pi * 10e-3)]) * a_factor
-    #         try:
-    #             loes = opti.root(heat_pump_ht, p0,
-    #                              args=(eta, U, areas, temp, working_fluid),
-    #                              options={"factor": .25})
+    if schleif:
+        aa = []
+        for a_factor in np.arange(1, 100, .75):
+            areas = np.array([(1.9 * np.pi * 10e-3), (1 * np.pi * 10e-3)]) * a_factor
+            try:
+                loes = opti.root(heat_pump_ht, p0,
+                                  args=(eta, U, areas, temp, working_fluid, 
+                                  composition, WF),
+                                  options={"factor": .25})
     
-    #             st, qw, A_hg, cop, cop_carnot, eta_rat, p_compr, q_h_dot = \
-    #                 heat_pump_ht(loes.x, eta, U, areas, temp, working_fluid, False)
+                st, qw, A_hg, cop, cop_carnot, eta_rat, p_compr, q_h_dot = \
+                    heat_pump_ht(loes.x, eta, U, areas, temp, working_fluid, 
+                    composition_opt, WF, False)
     
-    #             print("COP: %2.2f, COP(Carnot): %2.2f, eta(rational): %1.3f"
-    #                   % (cop, cop_carnot, eta_rat))
-    #             print("P-Compressor/W: %3.2f, Q_dot-highT/W: %3.2f"
-    #                   % (p_compr, q_h_dot))
-    #             p0 = loes.x
-    #         except:
-    #             pass
-    #         aa.append([a_factor, eta_rat, p_compr, cop, q_h_dot, *loes.x])
-    #     aa = np.array(aa)
+                print("COP: %2.2f, COP(Carnot): %2.2f, eta(rational): %1.3f"
+                      % (cop, cop_carnot, eta_rat))
+                print("P-Compressor/W: %3.2f, Q_dot-highT/W: %3.2f"
+                      % (p_compr, q_h_dot))
+                p0 = loes.x
+            except:
+                pass
+            aa.append([a_factor, eta_rat, p_compr, cop, q_h_dot, *loes.x])
+        aa = np.array(aa)
     
-    #     f, ax = plt.subplots(2, 2, sharex=True)
-    #     ax[0, 0].plot(aa[:, 0], aa[:, 1], "v")
-    #     ax[0, 0].set_title("$\eta_{rat}$")
-    #     ax[1, 1].plot(aa[:, 0], aa[:, 2]/1000, ".-")
-    #     ax[1,  1].plot(aa[:, 0], -aa[:, 4] / 1000, "-")
-    #     ax[1, 1].set_title("P, $\dot Q_h$ / kW")
-    #     ax[1, 0].plot(aa[:, 0], aa[:, -3]/1e5, "v-")
-    #     ax[1, 0].plot(aa[:, 0], aa[:, -2]/1e6, "-")
-    #     ax[1, 0].set_title("$p_l, p_h/10$ / bar")
-    #     ax[0, 1].plot(aa[:, 0], aa[:, -1]*1000, "o")
-    #     ax[0, 1].set_title("$\dot m$ / g/s")
-    #     f.suptitle(fluid_a+", T(l):%3i K, T(h):%3i K" % (temp[0], temp[1]))
-    #     for axx in ax.flat:
-    #         axx.set(xlabel='tubes')  # , ylabel='y-label')
-    # else:
-    #     print(loes)
+        f, ax = plt.subplots(2, 2, sharex=True)
+        ax[0, 0].plot(aa[:, 0], aa[:, 1], "v")
+        ax[0, 0].set_title("$\eta_{rat}$")
+        ax[1, 1].plot(aa[:, 0], aa[:, 2]/1000, ".-")
+        ax[1,  1].plot(aa[:, 0], -aa[:, 4] / 1000, "-")
+        ax[1, 1].set_title("P, $\dot Q_h$ / kW")
+        ax[1, 0].plot(aa[:, 0], aa[:, -3]/1e5, "v-")
+        ax[1, 0].plot(aa[:, 0], aa[:, -2]/1e6, "-")
+        ax[1, 0].set_title("$p_l, p_h/10$ / bar")
+        ax[0, 1].plot(aa[:, 0], aa[:, -1]*1000, "o")
+        ax[0, 1].set_title("$\dot m$ / g/s")
+        f.suptitle(fluid_a+", T(l):%3i K, T(h):%3i K" % (temp[0], temp[1]))
+        for axx in ax.flat:
+            axx.set(xlabel='tubes')  # , ylabel='y-label')
+    else:
+        print(loes)
