@@ -29,20 +29,25 @@ import os
 # p_0 = 1.013e5
 # temp_0 = 300
     
-fluid_a = "Propane * Pentane"
-x1 =.98
-composition =  [x1, 1-x1]  # .950, 0.050][0.9, 0.1]  #
+fluid_a = "Propane * Pentane * Dimethylether"
+
+x1 =.55
+x2 = 0.01
+composition =  [x1, x2, 1-x1-x2]  # .950, 0.050][0.9, 0.1]  #
 temp = np.array([273, 330])  # source and sink Temperature
 eta = .65
 p = np.array([6, 15]) * 1e5
 
 
 FLUIDMODEL = "REFPROP"  # "REFPROP"  or"CoolProp"
-_props = FLUIDMODEL  
+_props = FLUIDMODEL
+WF = ""
 if FLUIDMODEL == "REFPROP":
     os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
     from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
     working_fluid = fluid_a
+    WF = fprop.setRPFluid(working_fluid)
+    working_fluid = ""
     if _props =="REFPROP":
         RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
         _units = RP.GETENUMdll(0, "MASS BASE SI").iEnum # be careful pressure is in Pa!
@@ -80,7 +85,7 @@ def check_bound(p, bounds):
 
 
 
-def heat_pump_opti(para, eta, U, T_s, working_fluid, bounds):
+def heat_pump_opti(para, eta, U, T_s, working_fluid, bounds, WF):
     """
     Function to optimize (the COP/COP_reversible) of a heat pump with
     isothermal heat source and heat sink. For further details 
@@ -100,6 +105,8 @@ def heat_pump_opti(para, eta, U, T_s, working_fluid, bounds):
         DESCRIPTION.
     bounds : TYPE
         DESCRIPTION.
+    WF : Instance of Refprop
+        fluid mxture name/file are stored inside, output from setRPFluid
 
     Returns
     -------
@@ -116,7 +123,7 @@ def heat_pump_opti(para, eta, U, T_s, working_fluid, bounds):
     
     #print("p,a",p, areas)
     loes = opti.root(heat_pump_ht, p,
-                     args=(eta, U, areas, T_s, working_fluid,composition,
+                     args=(eta, U, areas, T_s, working_fluid,composition, WF,
                            True, 
                            False),
                      options={"factor": .25})
@@ -126,7 +133,7 @@ def heat_pump_opti(para, eta, U, T_s, working_fluid, bounds):
         A = areas
         
         print("\danach\n",loes.x)
-        rat_eff = heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition,
+        rat_eff = heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition, WF,
                                rootfind =False, optim=True)
         return -rat_eff
     else:
@@ -136,7 +143,7 @@ def heat_pump_opti(para, eta, U, T_s, working_fluid, bounds):
 
 
 
-def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition =[1.0], 
+def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition=[1.0], WF=WF,
                  rootfind =True, optim=False,
                  bounds=None):
     """
@@ -162,6 +169,10 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition =[1.0],
         secondary fluid temperatures low and high in K.
     working_fluid : coolprop or Refprop fluid
         DESCRIPTION.
+    composition : list or array
+        mole fractions of each compound
+    WF : instance of REFPROPFluid (or empty)
+        defines the fluid using REFPROP, output from setRPFluid
     rootfind: Boolean, optional.
         are we finding the root? (T-differences according to heat exchanger size)
     optim : Boolean, optional
@@ -201,34 +212,34 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition =[1.0],
         q_w = np. zeros((4))
         try:
             state[0, :] = fprop.prop_pq(p[0], 1, working_fluid, composition, 
-                                    option=1, units =_units, props=_props)  # vor dem Kompressor
+                                    option=1, units =_units, props=_props, RP=WF)  # vor dem Kompressor
             if state[0, 0] >= T_s[0]: problem =1
         except:
             state[0, :] = fprop.prop_pq(1.3e5, 1, working_fluid, composition, 
-                                    option=1, units =_units, props=_props)  # vor dem Kompressor
+                                    option=1, units =_units, props=_props, RP=WF)  # vor dem Kompressor
             print("Fehler!:", p,eta, U, A, T_s, optim)
             
         # Kompressor
         state[1, :] = fprop.sp(state[0, 4], p[1], working_fluid, composition, 
-                                option=1, units =_units, props=_props)  # isentropic
+                                option=1, units =_units, props=_props, RP=WF)  # isentropic
         q_w[0] = (state[1, 2] - state[0, 2]) / eta
         
         # kondensatoreintritt:
         state[2, :] = fprop.hp(state[0, 2] + q_w[0], p[1],  working_fluid, 
                                composition, 
-                                option=1, units =_units, props=_props)
+                                option=1, units =_units, props=_props, RP=WF)
         if state[2, 0] < T_s[1]: problem = 2
         # print ("Problem:", problem, p)
         state[6, :] = fprop.prop_pq(p[1], 1, working_fluid, composition, 
-                                option=1, units =_units, props=_props)  # Taupunkt
+                                option=1, units =_units, props=_props, RP=WF)  # Taupunkt
         if state[6, 0] <= T_s[1]: problem = 3
         q_w[1] = (state[6, 2] - state[2, 2])  # Waermeuebtragung bis dahin
 
         state[7, :] = fprop.prop_pq(p[1], 0, working_fluid, composition, 
-                                option=1, units =_units, props=_props)  # gerade kondensiert, Wunsch
+                                option=1, units =_units, props=_props, RP=WF)  # gerade kondensiert, Wunsch
         q_w[2] = state[7, 2] - state[6, 2]  # isotherme Kondensation
         state[3, :] = fprop.hp(state[7, 2], p[0], working_fluid, composition, 
-                                option=1, units =_units, props=_props)  # hinter Drossel
+                                option=1, units =_units, props=_props, RP=WF)  # hinter Drossel
         q_w[3] = state[0, 2] - state[3, 2]  # Verdampfer
         # - heat transfer:
         q_v = U[0] * A[0] * (T_s[0] - state[0, 0]) / m_dot  # isotherm Verdampfer
@@ -279,14 +290,14 @@ if __name__ == "__main__":
         (0.02, 0.99)]
  
     loes = opti.root(heat_pump_ht, p0,
-                     args=(eta, U, areas, temp, working_fluid,composition,
+                     args=(eta, U, areas, temp, working_fluid,composition, WF,
                            True, False, bou),
                      options={"factor": .25})
     if loes.success:
     
         st, qw, A_hg, cop, cop_carnot, eta_rat, p_compr, q_h_dot = \
             heat_pump_ht(loes.x, eta, U, areas, temp, working_fluid, 
-                         composition,
+                         composition, WF,
                          False)
         sortierung =[0, 1, 3, 4, 2, 0]  # order of the states along the cycle
         plt.axhline(temp[0])
@@ -306,14 +317,14 @@ if __name__ == "__main__":
     if optimierung:
        
         opti_loes = opti.shgo(lambda x:  heat_pump_opti(x, eta, U, temp, 
-                                             working_fluid, bou), bou)
+                                             working_fluid, bou, WF), bou)
                                     
         print( "\nUsed model:\n", FLUIDMODEL, "\n\n", opti_loes)
         composition_opt = [opti_loes.x[-1],  1-opti_loes.x[-1]]
         st, qw, A_hg, cop, cop_carnot, eta_rat, p_compr, q_h_dot = \
             heat_pump_ht(opti_loes.x[:3], eta, U, opti_loes.x[3:5], 
                          temp, working_fluid, 
-                         composition_opt,
+                         composition_opt, WF,
                          False)
         sortierung =[0, 1, 3, 4, 2, 0]  # order of the states along the cycle
         plt.axhline(temp[0])
