@@ -23,9 +23,10 @@ Created on Sun Oct  2 16:27:20 2022
 """
 import numpy as np
 import CoolProp.CoolProp as CP
-from fluid_properties_rp import tp, hp, hp_v, hp_exergy
+from fluid_properties_rp import tp, hp, hp_v, hp_exergy, setRPFluid
 from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
+from time import time
 props = "CoolProp"
 
 
@@ -42,13 +43,13 @@ class heat_exchanger:
         Parameters
         ----------
         fluids : list 
-            two coolProp-Fluid abstrct states (for low level).
+            two coolProp or RefPROP-Fluid abstract states (for low level).
         mass_flows : list or numpy-array length 2
             both mass flows.
         pressures : list or numpy-array length 2
             initial pressures of each fluid.
         enthalpies : list or numpy-array length 2
-            initial pressures of each fluid.
+            initial enthalpies of each fluid.
         UA : float
             overall heat transfer coefficient times area, 
             as constant (for simple calculations), default = 10.
@@ -97,17 +98,20 @@ class heat_exchanger:
         state_variables = np.zeros((2,6))
         final_states = np.zeros((2,6))
         q_dot = np.zeros((2))
-        
+        verbose = False
         for n in range(2): # get initial states (Temperatures)
             state_variables[n,:] = hp(self.enthalpies[n],self.pressures[n], 
                                        self.fluids[n], props=self.props,
-                                       composition=self.compositions[n])
+                                       composition=self.compositions[n],
+                                       RP=self.RP[n])
         final_states[0,:] = tp(state_variables[1, 0],state_variables[0, 1], 
                              self.fluids[0], props=self.props,
-                             composition=self.compositions[0])
+                             composition=self.compositions[0],
+                             RP=self.RP[0])
         final_states[1,:] = tp(state_variables[0, 0],state_variables[1, 1], 
                              self.fluids[1], props=self.props,
-                             composition=self.compositions[1])
+                             composition=self.compositions[1],
+                             RP=self.RP[1])
         for n in range(2):
             q_dot[n] = self.mass_flows[n] * (final_states[n, 2] 
                                              - state_variables[n, 2])
@@ -115,7 +119,7 @@ class heat_exchanger:
         if np.abs(q_dot[0]) > np.abs(q_dot[1]):
             q_max = q_dot[1]
         else: q_max = q_dot[0]
-        print ("Max. heat flow rates of both fluids: %3.2f W, %3.2f W" % (q_dot[0],q_dot[1]))
+        if verbose: print ("Max. heat flow rates of both fluids: %3.2f W, %3.2f W" % (q_dot[0],q_dot[1]))
         if option == 0:
             return q_max
         if option == 1:
@@ -123,7 +127,7 @@ class heat_exchanger:
             
 class counterflow_hex(heat_exchanger):
     def __init__(self, fluids, mass_flows, pressures, enthalpies, length, 
-                 diameters, U=10, no_tubes=1, no_points=100,
+                 diameters, U=10., no_tubes=1, no_points=100,
                  calc_type="const", name="HEX_0", compositions =[[1.0],[1.0]],
                  props="REFPROP", units=21):
         """
@@ -135,7 +139,7 @@ class counterflow_hex(heat_exchanger):
 
         Parameters
         ----------
-        fluids : TYPE list 
+        fluids : TYPE list (of strings for REFPROP)
             two coolProp or Refprop-Fluid names.
         mass_flows : TYPE list or numpy-array length 2
             both mass flows.
@@ -176,6 +180,8 @@ class counterflow_hex(heat_exchanger):
         """
         
         self.fluids = fluids
+        self.RP = [setRPFluid(fluids[0]), setRPFluid(fluids[1])]
+        self.fluids = ["", ""]
         self.compositions = compositions
         self.props = props
         self.units = units
@@ -183,7 +189,7 @@ class counterflow_hex(heat_exchanger):
         self.pressures = pressures
         self.enthalpies = enthalpies
         self.length = length
-        self.diameters = diameters
+        self.diameters = diameters # only inner diameter is used!
         self.U = U
         self.no_tubes = no_tubes
         self.no_points = no_points
@@ -198,8 +204,8 @@ class counterflow_hex(heat_exchanger):
         self.min_flow = np.where(qd == qm)[0]
         self.qm_specific =qm / self.mass_flows[self.min_flow]
         self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
-                                    self.enthalpies[0] + qm , no_points)
-        self.h_out = np.linspace(self.enthalpies[1] - qm, 
+                                    self.enthalpies[0] + qm/2 , no_points)
+        self.h_out = np.linspace(self.enthalpies[1] - qm/2, 
                                     self.enthalpies[1] , no_points)
         
         
@@ -230,9 +236,11 @@ class counterflow_hex(heat_exchanger):
         """
         
         T1 = hp_v(h[1], self.pressures[1], self.fluids[1], units=self.units,
-                   props=self.props, option =1, composition=self.compositions[1])[0]
+                   props=self.props, option =1, composition=self.compositions[1], 
+                   RP=self.RP[1])[0]
         T0 = hp_v(h[0], self.pressures[0], self.fluids[0], units=self.units,
-                   props=self.props, option =1, composition=self.compositions[0])[0]
+                   props=self.props, option =1, composition=self.compositions[0],
+                   RP=self.RP[0])[0]
         q_konv = T1-T0
         
         dh0 = self.U *self.perimeter / self.mass_flows[0]*q_konv
@@ -278,8 +286,8 @@ class counterflow_hex(heat_exchanger):
 
         """
         y=np.zeros((2,self.no_points))
-        y[0,:] = self.h_in
-        y[1,:] = self.h_out
+        y[0, :] = self.h_in
+        y[1, :] = self.h_out
         
         result=solve_bvp(self.energy,self.bc, self.x, y, tol=5e-3, 
                          max_nodes=1000)
@@ -314,13 +322,16 @@ class counterflow_hex(heat_exchanger):
             exchanger (W), equal to the heat flow rate.
 
         """
+        verbose =False
         if result.success:
             states_0 = hp_v(result.y[0],self.pressures[0], 
                              self.fluids[0], props=self.props, units=self.units,
-                             composition=self.compositions[0])
+                             composition=self.compositions[0],
+                             RP=self.RP[0])
             states_1 = hp_v(result.y[1], self.pressures[1], 
                              self.fluids[1], props=self.props, units=self.units,
-                             composition=self.compositions[1])
+                             composition=self.compositions[1],
+                             RP=self.RP[1])
             s0 = states_0[4]
             s1 = states_1[4]
             if option > 5:
@@ -334,15 +345,16 @@ class counterflow_hex(heat_exchanger):
                 ax[1].set_xlabel("H_dot / W")
                 ax[1].set_ylabel("temperature / K")
                 # fi.show()
+                fi.savefig("heat_exch_last.png")
             ds = (s0[-1] - s0[0]) * self.mass_flows[0] + \
                  (s1[0] - s1[-1]) * self.mass_flows[1]
             dh2 = (states_1[2][0] - states_1[2][-1]) * self.mass_flows[1]
             
             if option >0:
-                print("Entropy production rate:%3.2f W/K" % (ds))
+                if verbose: print("Entropy production rate:%3.4f W/K" % (ds))
             return states_0, states_1, ds, dh2
         else: 
-            print("Error: bvp-problem not solved succesfully!", 
+            if verbose: print("Error: bvp-problem not solved succesfully!", 
                   result.message)
             return -1, -1, -1
             
@@ -360,25 +372,30 @@ class counterflow_hex(heat_exchanger):
         ex = 0
         for n in range(2):
             ex +=hp_exergy(self.enthalpies[n],self.pressures[n], 
-                           self.fluids[n], props=self.props)\
+                           self.fluids[n], props=self.props,
+                           RP=self.RP[n])\
                     *self.mass_flows[n]
         return ex
                     
 if __name__  == "__main__":
     
     T0 = 283.  # K
-    props = "REFPROP"  # "CoolProp"  # "REFPROP"
-    mdot=np.array((.015, .025)) # kg/s for both fluids
+    props = "REFPROP"  # "CoolProp"  or "REFPROP"
+    mdot=np.array((.012, .0213)) # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
-    Tin = [354, 309]  # initial fluid temperatures, assuming single phae each!
+    Tin = [354, 290]  # initial fluid temperatures, assuming single phae each!
     p = [5e5, 4.e5]  # pressure for each fluid, Pa
-    diameters =[1.e-2, 5e-2]  # m
-    length = 5.  # m
-    tubes = 6
-    fl_names = ["ISOBUTANE", "NONANE"]
+    tubes = 12
+    d_in = 1.e-2
+    A_min = tubes * np.pi * (d_in/2)**2
+    d_out_min = np.sqrt(A_min / np.pi) * 2
+    diameters =[d_in, d_out_min * 1.25]  # m
+    length = 4.  # m
+    
+    
     if props =="CoolProp":
         # Isobutane (hot) and water (cold)
-        
+        fl_names = ["ISOBUTANE", "NONANE"]
         fl1 = CP.AbstractState("REFPROP", fl_names[0])
         # fl1.set_mole_fractions([0.5,0.5])  
         # fl1.build_phase_envelope("")
@@ -389,7 +406,7 @@ if __name__  == "__main__":
     if props == "REFPROP":
         fl1 ="Propane * Pentane"
         fl2 = "Water"
-        compositions =[[.65,.35],[ 1.]]
+        compositions =[[.6,.4],[ 1.]]
         # fl = fl_names
         fl =[fl1,fl2]
     
@@ -406,12 +423,14 @@ if __name__  == "__main__":
                    composition =compositions[1])[2]  # state of fluid 2 right (at L)
 
     
-    
+    t0 =time()
     heat_ex = counterflow_hex(fl, mdot, p, [ha_in, hb_in], 
                               length, diameters, U=alpha, no_tubes=tubes, 
                               props=props, compositions =compositions)  # assign parameters
+    t1 =time()
     res =heat_ex.he_bvp_solve()  # solve the heat exchanger problem
-    
+    tf =time()
+    print("time:", tf-t0, tf-t1)
     f1, f2, ds, dq = heat_ex.he_state(res, 6) # evaluate results (and plot)
     ex_in = heat_ex.exergy_entering()
     print("Entropy production rate: %2.2e W/K, exergy loss rate %3.3f W, dq %3.2f" 

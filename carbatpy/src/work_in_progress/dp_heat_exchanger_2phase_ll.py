@@ -308,10 +308,11 @@ def h_exch_entropy(op, m_dot, fluids, p_c_w=p_c):
     #print( "%3.3f %3.3f %3.3f " % (op[0],op[1],op[2]))
     return  - exergy_end/m_dot_s
 
+from time import time
 fluids = [working_fluid, secondary_fluid]
-bc_opt = ((.004, .02), (3.5e-3, 14e-3), (13e-3, 30e-3))
-nm = 4
-nid = 4
+bc_opt = ((.0005, .001), (3.5e-3, 14e-3), (13e-3, 30e-3))
+nm = 2
+nid = 2
 res_eval=np.zeros((nm,nid))
 msec = np.linspace(bc_opt[0][0], bc_opt[0][1], nm)
 ds =  np.linspace(bc_opt[1][0], bc_opt[1][1], nid)
@@ -329,14 +330,23 @@ plt.title("L: %2i m,  %8s_%8s_m%3i g/s" %
 plt.savefig("sp_Length_%2i_F%8s_%8s_m%3i.png" %
             (l_max, fluid_a, fluid_s, m_dot*1000))
 
-try:
-    optimal = differential_evolution(h_exch_entropy, bc_opt,
-                                     args=(m_dot, fluids, p_c))
-    print(optimal)
-except:
-    print("Optimierung mit Fehler")
+# try:
+#     optimal = differential_evolution(h_exch_entropy, bc_opt,
+#                                      args=(m_dot, fluids, p_c))
+#     print(optimal)
+# except Exception as inst:
 
-m_dot_s, diameter, diameter_s = [0.08999934, 0.00454419, 0.02790231]
+#     print(type(inst))    # the exception instance
+
+#     print(inst.args)     # arguments stored in .args
+
+#     print(inst)          # __str__ allows args to be printed directly,
+
+#                          # but may be overridden in exception subclasses
+
+#     print("Optimierung mit Fehler")
+
+m_dot_s, diameter, diameter_s = [0.008999934, 0.00454419, 0.02790231]
 x_all = np.linspace(0, l_max, n_space)
 anfwert = np.zeros((4, n_space))
 para = np.polyfit([0, l_max], [h_0, h_end], 1)
@@ -349,12 +359,13 @@ anfwert[1, :] = np.polyval(para, x_all)
 print("program running, please wait ...")
 diameters =[diameter, diameter_s]
 m_dots = [m_dot, m_dot_s]
-
+t0 =time()
 ph_verlauf = solve_bvp(fun=
             lambda x,y: bilanzenV(x,y, diameters, m_dots, fluids, p_c),
             bc=bcs, x=x_all, y=anfwert,  max_nodes=500, tol=0.0051, verbose=0)
 # ph_verlauf = solve_bvp(bilanzen, bcs, x_all, anfwert)
 n_val = len(ph_verlauf.x)
+print("Time:", time()-t0,)
 
 
 # zum Auswerten und Plotten: -----------------------------------------
@@ -416,7 +427,7 @@ for ii in range(4):
 
 print("p(Ende):  %6.3f Pa, T_ende %3.2f K, T_sec_out %3.2f K" %
       (alle[1][-1], alle[0][-1], alle_s[0][0]))
-
+fig.savefig("optimized_hex.png")
 # Vergleich kinetische Energie mit Totalenthalpie ----------------
 ekin_plot = False
 if ekin_plot:
