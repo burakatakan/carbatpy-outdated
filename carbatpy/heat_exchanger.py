@@ -27,7 +27,8 @@ from fluid_properties_rp import tp, hp, hp_v, hp_exergy, setRPFluid
 from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
 from time import time
-props = "CoolProp"
+import yaml
+props = "REFPROP"
 
 
 class heat_exchanger:
@@ -178,9 +179,9 @@ class counterflow_hex(heat_exchanger):
         None.
 
         """
-        
+        calculate = True
         self.fluids = fluids
-        self.RP = [setRPFluid(fluids[0]), setRPFluid(fluids[1])]
+        
         self.fluids = ["", ""]
         self.compositions = compositions
         self.props = props
@@ -199,14 +200,16 @@ class counterflow_hex(heat_exchanger):
         self.perimeter =self.diameters[0] * np.pi * self.no_tubes
         self.area = self.length * self.perimeter
         self.UA = self.area * self.U
-        
-        qm, qd, f_states = self.q_max(1)
-        self.min_flow = np.where(qd == qm)[0]
-        self.qm_specific =qm / self.mass_flows[self.min_flow]
-        self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
-                                    self.enthalpies[0] + qm/2 , no_points)
-        self.h_out = np.linspace(self.enthalpies[1] - qm/2, 
-                                    self.enthalpies[1] , no_points)
+        if calculate:
+            self.RP = [setRPFluid(fluids[0]), setRPFluid(fluids[1])]
+            qm, qd, f_states = self.q_max(1)
+            self.min_flow = np.where(qd == qm)[0][0]
+            print(qm, self.min_flow )
+            self.qm_specific =qm / self.mass_flows[self.min_flow]
+            self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
+                                        self.enthalpies[0] + qm/2 , no_points)
+            self.h_out = np.linspace(self.enthalpies[1] - qm/2, 
+                                        self.enthalpies[1] , no_points)
         
         
     def energy(self,x,h): 
@@ -376,12 +379,88 @@ class counterflow_hex(heat_exchanger):
                            RP=self.RP[n])\
                     *self.mass_flows[n]
         return ex
+
+class st_heat_exchanger_input:
+    
+    # Heat exchanger base class
+    
+    def __init__(self, fluids, mass_flows, pressures, enthalpies,length, d_in,
+                 U, no_tubes, no_points,
+                    props, composition,
+                 calc_type="const", name="HEX_0", units=21):
+        """
+        
+        New class for writing and reading the shell and tube heat excahnger 
+        parameters to  a YAML file and shall be used to call the counterflow
+        heatexchanger with.
+        
+        Initializing the heat exchanger with fluids, mass flow rates etc.
+        at the moment pressures are constant.
+
+        Parameters
+        ----------
+        fluids : list 
+            two coolProp or RefPROP-Fluid abstract states (for low level).
+        mass_flows : list or numpy-array length 2
+            both mass flows.
+        pressures : list or numpy-array length 2
+            initial pressures of each fluid.
+        enthalpies : list or numpy-array length 2
+            initial enthalpies of each fluid.
+        UA : float
+            overall heat transfer coefficient times area, 
+            as constant (for simple calculations), default = 10.
+        calc_type : string
+            if "const" = does not vary along heat exchanger (default)
+            if "calc" = calculated from Nusselt correlation 
+            along heat exchanger
+        name: string.
+            name of the heat-exchanger, default = "HEX_0"
+
+        Returns
+        -------
+        None.
+
+        """
+        self.fluids = fluids
+        self.mass_flows = mass_flows
+        self.pressures = pressures
+        self.enthalpies = enthalpies
+        
+        self.calc_type = calc_type
+        if calc_type=="const":
+            self.U = U
+        self.name = name
+        self.Tin=Tin
+        self.no_tubes=no_tubes
+        self.no_points = no_points
+        self.d_in=d_in
+        self.length=length
+        self.composition=composition
+        self.props=props
+        self.name =name
+        self.units =units
+        
+    def write_yaml(self, fname="out_fileN.yaml"):
+        with open(fname, mode="wt", encoding="utf-8") as file:
+            yaml.dump(self, file)
+            
+    def readl_yaml(fname="out_fileN.yaml"):
+        with open(fname, mode="rt", encoding="utf-8") as file:
+            neu=yaml.unsafe_load(file)
+            return neu
+    def all_out(self):
+        return (self.fluids, self.mass_flows, self.pressures, self.enthalpies,
+                self.length, self.d_in,self.U, self.no_tubes, self.no_points,
+                self.calc_type, self.name,
+                         self.composition,self.props,
+                      self.units)
                     
 if __name__  == "__main__":
     
     T0 = 283.  # K
     props = "REFPROP"  # "CoolProp"  or "REFPROP"
-    mdot=np.array((.012, .0213)) # kg/s for both fluids
+    mdot=[.012, .0213] # kg/s for both fluids
     alpha = 500  # heat transfer coefficient through the wall (from total resistance)
     Tin = [354, 290]  # initial fluid temperatures, assuming single phae each!
     p = [5e5, 4.e5]  # pressure for each fluid, Pa
@@ -389,8 +468,13 @@ if __name__  == "__main__":
     d_in = 1.e-2
     A_min = tubes * np.pi * (d_in/2)**2
     d_out_min = np.sqrt(A_min / np.pi) * 2
-    diameters =[d_in, d_out_min * 1.25]  # m
+    diameters =[d_in, float(d_out_min * 1.25)]  # m
+    no_points =100
     length = 4.  # m
+    # with open("out_fileN.yaml", mode="wt", encoding="utf-8") as file:
+    #     yaml.dump(T0, file)
+    #     yaml.dump(props, file)
+    #     yaml.dump_all((mdot,Tin), file)
     
     
     if props =="CoolProp":
@@ -422,14 +506,21 @@ if __name__  == "__main__":
     hb_outMax = tp(Tin[0],p[1],fl[1], props=props, 
                    composition =compositions[1])[2]  # state of fluid 2 right (at L)
 
-    
+    neu =st_heat_exchanger_input(fl,mdot, p,[float(ha_in), float(hb_in)], 
+                                 length,diameters, alpha, tubes, no_points, 
+                                 props, compositions)
+    neu.write_yaml("neue2.yaml")
     t0 =time()
     heat_ex = counterflow_hex(fl, mdot, p, [ha_in, hb_in], 
                               length, diameters, U=alpha, no_tubes=tubes, 
                               props=props, compositions =compositions)  # assign parameters
+    hex2 =counterflow_hex(*neu.all_out())
+
     t1 =time()
     res =heat_ex.he_bvp_solve()  # solve the heat exchanger problem
     tf =time()
+        
+    
     print("time:", tf-t0, tf-t1)
     f1, f2, ds, dq = heat_ex.he_state(res, 6) # evaluate results (and plot)
     ex_in = heat_ex.exergy_entering()
