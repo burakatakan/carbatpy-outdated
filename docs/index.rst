@@ -14,10 +14,10 @@ good depth. But we are at the beginning ...
    :caption: Contents: 
         
    heat_exchanger
-   hex_run_script
    mixture_search
    heat_pump_rp
-   fluid_properties_rp 
+   fluid_properties_rp
+   hex_run_script
 
 Indices and tables
 ==================

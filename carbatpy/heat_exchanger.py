@@ -387,7 +387,7 @@ class counterflow_hex(heat_exchanger):
     def exergy_entering(self):
         """
         Calculate the exergyflow rates of both fluids entering 
-        the heat exchanger. For exergy loss calculations and efficiencies.
+        the heat exchanger. For exergy loss calculations and efficiencies. 
 
         Returns
         -------

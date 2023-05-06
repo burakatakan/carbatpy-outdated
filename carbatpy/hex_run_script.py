@@ -8,7 +8,7 @@ plotting and writimg the results to a second file
 (within carbatpy)
 Created on Sat May  6 10:02:19 2023
 
-@author: atakan
+@author: atakan 
 """
 
 import heat_exchanger as h_ex
