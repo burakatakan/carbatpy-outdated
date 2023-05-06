@@ -15,9 +15,18 @@ The results are plotted and stored (also to an Excel file).
 Finally a run-script for the calculation is given as an example, which reads 
 the data from the yaml-file, starts the heat-exchanger calculations and stores everything.
 
-This should be a good starting point.
--------------------------------------
-    
+This should be a good starting point
+
+
+.. toctree::
+   :maxdepth: 4
+   :caption: Contents: 
+        
+   hex_run_script
+
+
 .. automodule:: heat_exchanger
     :members:
     :undoc-members:
+
+    
