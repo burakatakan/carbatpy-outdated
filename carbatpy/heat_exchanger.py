@@ -28,6 +28,8 @@ from scipy.integrate import solve_bvp
 import matplotlib.pyplot as plt
 from time import time
 import yaml
+from fluid_properties_rp import _fl_properties_names
+import pandas as pd
 props = "REFPROP"
 
 
@@ -296,7 +298,7 @@ class counterflow_hex(heat_exchanger):
                            max_nodes=1000)
         return result
 
-    def he_state(self, result, option=0):
+    def he_state(self, result, option=0, fname="hex_result"):
         """
         After solving the bvp-Problem for the evaluation of 
         all temperatures, enthalpies, entropies etc. 
@@ -309,6 +311,8 @@ class counterflow_hex(heat_exchanger):
             DESCRIPTION.
         option : TYPE, optional
             DESCRIPTION. The default is 0.
+        fname : string
+            filename (without ending for storing the figure and the numbers)
 
         Returns
         -------
@@ -349,7 +353,7 @@ class counterflow_hex(heat_exchanger):
                 ax[1].set_xlabel("H_dot / W")
                 ax[1].set_ylabel("temperature / K")
                 # fi.show()
-                fi.savefig("heat_exch_last.png")
+                fi.savefig(fname+".png")
             ds = (s0[-1] - s0[0]) * self.mass_flows[0] + \
                  (s1[0] - s1[-1]) * self.mass_flows[1]
             dh2 = (states_1[2][0] - states_1[2][-1]) * self.mass_flows[1]
@@ -357,6 +361,22 @@ class counterflow_hex(heat_exchanger):
             if option > 0:
                 if verbose:
                     print("Entropy production rate:%3.4f W/K" % (ds))
+            # Print all to an Excel-File:
+            res0={"ds":ds, "dq":dh2}
+            nx, ny = np.shape(states_0)
+            alles = np.zeros((2*nx + 1,ny))
+            alles[0,:] = result.x
+            alles[1:nx+1] = states_0
+            alles[nx+1:] = states_1
+            names =("x",*_fl_properties_names[:6]*2)
+            pd0=pd.DataFrame(alles.T,columns=names)
+            #zzz = pd.DataFrame(dict( (key, value) for (key, value) in self.__dict__.items()))
+            res0=pd.DataFrame(res0,["total"])
+            with pd.ExcelWriter(fname+".xlsx") as writer: 
+                pd0.to_excel(writer, sheet_name="results")
+                #zzz.to_excel(writer, sheet_name="input")
+                res0.to_excel(writer, sheet_name="overallRes")
+                
             return states_0, states_1, ds, dh2
         else:
             if verbose:
@@ -483,7 +503,7 @@ class st_heat_exchanger_input:
         with open(fname, mode="wt", encoding="utf-8") as file:
             yaml.dump(self, file)
 
-    def readl_yaml(fname="st_hex_parameters_file.yaml"):
+    def read_yaml(fname="st_hex_parameters_file.yaml"):
         """
         read a yaml file
 
@@ -598,7 +618,7 @@ if __name__ == "__main__":
     neu = st_heat_exchanger_input(fl, mdot, p, [float(ha_in), float(hb_in)],
                                   length, diameters, alpha, tubes, no_points,
                                   props, compositions)
-    neu.write_yaml("st_hex_parameters_file.yaml")
+    neu.write_yaml("st_hex_parameters_fileN.yaml")
     t0 = time()
     heat_ex = counterflow_hex(fl, mdot, p, [ha_in, hb_in],
                               length, diameters, U=alpha, no_tubes=tubes,

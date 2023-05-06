@@ -31,6 +31,11 @@ from time import time
 
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
 _props = "REFPROP"  # or "CoolProp"
+_fl_properties_names = ("Temperature", "Pressure", "spec. Enthalpy",
+                        "spec. Volume","spec. Entropy", "quality", 
+                        "spec. heat capacity", 
+                        "viscosity", "thermal conductivity", 
+                        "Prandtl number","k.viscosity")
 # order for coolprop,alle_0:[_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]"
 if _props == "REFPROP":
     try:
