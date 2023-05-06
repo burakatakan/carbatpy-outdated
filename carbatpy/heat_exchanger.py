@@ -465,14 +465,14 @@ class st_heat_exchanger_input:
         self.name = name
         self.units = units
 
-    def write_yaml(self, fname="out_fileN.yaml"):
+    def write_yaml(self, fname="st_hex_parameters_file.yaml"):
         """
         Write a yaml file
 
         Parameters
         ----------
         fname : string, optional
-            file name. The default is "out_fileN.yaml".
+            file name. The default is "st_hex_parameters_file.yaml".
 
         Returns
         -------
@@ -483,7 +483,7 @@ class st_heat_exchanger_input:
         with open(fname, mode="wt", encoding="utf-8") as file:
             yaml.dump(self, file)
 
-    def readl_yaml(fname="out_fileN.yaml"):
+    def readl_yaml(fname="st_hex_parameters_file.yaml"):
         """
         read a yaml file
 
@@ -598,7 +598,7 @@ if __name__ == "__main__":
     neu = st_heat_exchanger_input(fl, mdot, p, [float(ha_in), float(hb_in)],
                                   length, diameters, alpha, tubes, no_points,
                                   props, compositions)
-    neu.write_yaml("neue2.yaml")
+    neu.write_yaml("st_hex_parameters_file.yaml")
     t0 = time()
     heat_ex = counterflow_hex(fl, mdot, p, [ha_in, hb_in],
                               length, diameters, U=alpha, no_tubes=tubes,
