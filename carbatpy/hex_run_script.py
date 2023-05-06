@@ -13,12 +13,15 @@ Created on Sat May  6 10:02:19 2023
 
 import heat_exchanger as h_ex
 import pandas as pd
+import os
 
+directory_path = os.path.dirname(os.path.abspath(__file__)) 
 
 
 # Name of the yaml-file
-y_file_name= "st_hex_parameters_file"
-T0 =298.15
+y_file_name = "st_hex_parameters_file"
+y_file_name = os.path.join(directory_path, y_file_name)
+T0 = 298.15
 
 # read the yaml file as input
 neu = h_ex.st_heat_exchanger_input.read_yaml(y_file_name+".yaml")
@@ -30,12 +33,13 @@ hex2 = h_ex.counterflow_hex(*neu.all_out())
 res = hex2.he_bvp_solve()
 print(f"Solution found: {res.success},  {res.message}")
 
-#plotting and evalution:
-f1, f2, ds, dq = hex2.he_state(res, 6, y_file_name)  # evaluate results (and plot)
+# plotting and evalution:
+# evaluate results (and plot)
+f1, f2, ds, dq = hex2.he_state(res, 6, y_file_name)
 
 # also adding the input to the Excel file as a new sheet
-zzz = pd.DataFrame(dict( (key, value) for (key, value) in neu.__dict__.items()))
-with pd.ExcelWriter(y_file_name+".xlsx", mode ="a") as writer: 
+zzz = pd.DataFrame(dict((key, value) for (key, value) in neu.__dict__.items()))
+with pd.ExcelWriter(y_file_name+".xlsx", mode="a") as writer:
     zzz.to_excel(writer, sheet_name="input")
 
 

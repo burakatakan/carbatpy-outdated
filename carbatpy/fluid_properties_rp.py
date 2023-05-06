@@ -186,7 +186,8 @@ def hp(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
         if option == 1:
             o = RP.REFPROP2dll(fluid, "HP", "T;D;S;QMASS",
                                units, 0, h, p, composition)
-            alle = [o.Output[0], p, h, 1/o.Output[1], *o.Output[2:4]]
+            
+            alle = [o.Output[0], p, h, 1./o.Output[1], *o.Output[2:4]]
 
     elif props == "CoolProp":
         fluid.update(CP.HmassP_INPUTS, h, p)
