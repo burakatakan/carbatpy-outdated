@@ -26,6 +26,7 @@ def read_hex_file(fn, out):
     fluids = ["", ""]
     compo_all = []
     dfs = []
+
     for sheet in xl.sheet_names:
         blatt0 = sheet    # erstes Blatt in der Datei
         df1 = xl.parse(blatt0)
@@ -70,6 +71,7 @@ def read_hex_file(fn, out):
         # all what is needed for heat_exchanger.counterflow_hex :
         return (fluids, [m_dot0[0], m_dot1[0]], [p_in0[0], p_in1[0]], length,
                 d_in, U, tubes, [props0, props1], compo_all)
+    else: print(f"{out} is not implemented yet!")
 
 
 if __name__ == "__main__":
