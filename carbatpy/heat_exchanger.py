@@ -207,7 +207,7 @@ class counterflow_hex(heat_exchanger):
             self.RP = [setRPFluid(fluids[0]), setRPFluid(fluids[1])]
             qm, qd, f_states = self.q_max(1)
             self.min_flow = np.where(qd == qm)[0][0]
-            print(qm, self.min_flow)
+            # print(qm, self.min_flow)
             self.qm_specific = qm / self.mass_flows[self.min_flow]
             self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
                                     self.enthalpies[0] + qm/2, no_points)

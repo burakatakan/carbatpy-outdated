@@ -21,7 +21,7 @@ Tcond = 273.15+60
 Tin = 273.15 + 20
 Tout = 273.15 + 131.5
 
-fluid_s = "Propane * Hexane * Dimethylether"  # "Butane"
+fluid_s = "Propane * Hexane * Butane" # "Dimethylether"  # "Butane"
 x0=.55
 x1 = 1-x0 -.08
 comp = [x0, x1, 1-x0-x1]# [.4, 0.5 , 0.1]
@@ -136,13 +136,16 @@ if __name__ == "__main__":
     res = hp_calc(p0, p0 * p_ratio, comp = comp)
     pos_shift = np.where(res[:,0]==min(res[:,0]))[0]
     f, ax = plt.subplots(len(pl_list), 1)
-    
+    f2, ax2 = plt.subplots(1, 1)
     # find the ternary composition for given compressor inlet T & p:
     loes = opti.root(find_comp, x1, args=(x0,1.5e5, 290.))
     fn, leg = f_name(fluid_s, comp, p0, p_ratio)
     for ii, was in enumerate(pl_list):
         ax[ii].plot((res[:,was[0]]-res[pos_shift,was[0]]) * kJ, res[:,was[1]],
                     "b-o", label=leg)
+    was =pl_list[0]
+    ax2.plot((res[:,was[0]]-res[pos_shift,was[0]]) * kJ, res[:,was[1]],
+                "b-o", label=leg)
     comp0 = comp
     comp_n = x0, loes.x[0], 1-x0-loes.x[0]
     print (fluid_s, "%1.3f:%1.3f:%1.3f"%(comp_n[:]))
@@ -156,8 +159,15 @@ if __name__ == "__main__":
         ax[ii].set_xlabel(names[was[0]])
         ax[ii].set_ylabel(names[was[1]])
     ax[ii].legend()
+    was =pl_list[0]
+    ax2.plot((res[:, was[0]]-res[pos_shift, [was[0]]]) * kJ, 
+                res[:, was[1]],"k-v", label=leg)
     
+    ax2.set_xlabel(names[was[0]])
+    ax2.set_ylabel(names[was[1]])
+    ax2.legend()
     f.savefig(fn)
+    f2.savefig(fn)
             
     
     
