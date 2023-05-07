@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Heat exchanger base class 
-and counterflow heat exchanger class are introduced
+Heat exchanger base class and counterflow heat exchanger class are introduced
 For the first, only the maximum possible heat flow rate s evaluated.
 For the counterflow heat exchanger at the moment the boundary value problem 
 is solved with constant overall heat transfer coefficient  along the axial 
