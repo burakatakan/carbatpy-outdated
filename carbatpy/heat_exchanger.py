@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Heat exchanger base class 
-and counterflow heat exchnager class are introduced
+and counterflow heat exchanger class are introduced
 For the first, only the maximum possible heat flow rate s evaluated.
 For the counterflow heat exchanger at the moment the boundary value problem 
 is solved with constant overall heat transfer coefficient  along the axial 
@@ -60,7 +60,7 @@ class heat_exchanger:
             if "const" = does not vary along heat exchanger (default)
             if "calc" = calculated from Nusselt correlation 
             along heat exchanger
-        name: string.
+        name : string.
             name of the heat-exchanger, default = "HEX_0"
 
         Returns
@@ -167,14 +167,14 @@ class counterflow_hex(heat_exchanger):
             if "const" = does not vary along heat exchanger (default)
             if "calc" = calculated from Nusselt correlation 
             along heat exchanger
-        name: string.
+        name : string.
             name of the heat-exchanger, default = "HEX_0"
         composition s: list of lists
             in each list the mole fraction of each compound in each fluid is
             listed. Two pure fluids: [[1.0],[1.0]
-        props: "REFPROP or "CoolProp""
+        props : "REFPROP or "CoolProp""
             module to evaluate fluid properties
-        units: integer
+        units : integer
             selection of units (for REFPROP, generally SI)
 
 
@@ -256,7 +256,7 @@ class counterflow_hex(heat_exchanger):
 
     def bc(self, ha, hb):
         """
-        two boundary conditions for bvp-solver (scipy-optimize) needed
+        two boundary conditions for bvp-solver (scipy.integrate) needed
         here: the enthalpies of the inner fluid at x=0 and the enthalpy of 
         the outer fluid at the end of the heat exchanger at x=length
 
