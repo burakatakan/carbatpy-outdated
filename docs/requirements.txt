@@ -1,2 +1,7 @@
 furo==2021.11.16
 numpy
+CoolProp
+scipy
+matplotlib
+pandas
+yaml

@@ -12,7 +12,7 @@ can be calculated for a state of known h and p.
 For REFPROP two usages of hp, Tp etc. are possible:
 Passing a string with the fluid name and compositon, properties etc.
 (This sometimes leads to trouble, when having many function calls >1E5 and
- it is slower). selected instance (RP) will be used throughout.
+it is slower). selected instance (RP) will be used throughout.
 
 Or:First calling setPRFluid with the fluid name string. This generates an 
 instance of REFPROP for this fluid (mixture), which has to be passed to the 
