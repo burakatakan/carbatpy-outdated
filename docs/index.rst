@@ -13,10 +13,11 @@ good depth. But we are at the beginning ...
    :maxdepth: 4
    :caption: Contents: 
         
-   heat_exchanger
+   
    mixture_search
    heat_pump_rp
    fluid_properties_rp
+   heat_exchanger
    
 Indices and tables
 ==================

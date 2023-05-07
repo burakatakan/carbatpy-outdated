@@ -362,21 +362,21 @@ class counterflow_hex(heat_exchanger):
                 if verbose:
                     print("Entropy production rate:%3.4f W/K" % (ds))
             # Print all to an Excel-File:
-            res0={"ds":ds, "dq":dh2}
+            res0 = {"ds": ds, "dq": dh2}
             nx, ny = np.shape(states_0)
-            alles = np.zeros((2*nx + 1,ny))
-            alles[0,:] = result.x
+            alles = np.zeros((2*nx + 1, ny))
+            alles[0, :] = result.x
             alles[1:nx+1] = states_0
             alles[nx+1:] = states_1
-            names =("x",*_fl_properties_names[:6]*2)
-            pd0=pd.DataFrame(alles.T,columns=names)
-            #zzz = pd.DataFrame(dict( (key, value) for (key, value) in self.__dict__.items()))
-            res0=pd.DataFrame(res0,["total"])
-            with pd.ExcelWriter(fname+".xlsx") as writer: 
+            names = ("x", *_fl_properties_names[:6]*2)
+            pd0 = pd.DataFrame(alles.T, columns=names)
+            # zzz = pd.DataFrame(dict( (key, value) for (key, value) in self.__dict__.items()))
+            res0 = pd.DataFrame(res0, ["total"])
+            with pd.ExcelWriter(fname+".xlsx") as writer:
                 pd0.to_excel(writer, sheet_name="results")
-                #zzz.to_excel(writer, sheet_name="input")
+                # zzz.to_excel(writer, sheet_name="input")
                 res0.to_excel(writer, sheet_name="overallRes")
-                
+
             return states_0, states_1, ds, dh2
         else:
             if verbose:
