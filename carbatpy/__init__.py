@@ -9,4 +9,4 @@ __all__ = ["fluid_properties_rp",
            "optimize_mixture", 
            "heat_pump",
            "rev_condenser", 
-           "hex_run_script"]
+           "examples/hex_run_script"]
