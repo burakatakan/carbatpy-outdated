@@ -472,9 +472,9 @@ class st_heat_exchanger_input:
 
         self.calc_type = calc_type
         if calc_type == "const":
-            self.U = U
+            self.heat_tarnsfer_coefficient = U
         self.name = name
-        self.Tin = Tin
+        self.temperture_in = Tin
         self.no_tubes = no_tubes
         self.no_points = no_points
         self.d_in = d_in
@@ -560,7 +560,8 @@ class st_heat_exchanger_input:
 
         """
         return (self.fluids, self.mass_flows, self.pressures, self.enthalpies,
-                self.length, self.d_in, self.U, self.no_tubes, self.no_points,
+                self.length, self.d_in, self.heat_transfer_coefficient, 
+                self.no_tubes, self.no_points,
                 self.calc_type, self.name,
                 self.composition, self.props,
                 self.units)

@@ -282,12 +282,13 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition=[1.0], WF=WF,
             return np.zeros(14)
         
         
-class heat_pump_input:
+class heat_pump:
     
     def __init__(self, fluids, mass_flows, pressures, eta, areas, temp,
                d_in, U, props,  composition, bounds, rootfind,
-               optimization,
-                 calc_type="const", name="heatpump_0", units=21):
+               optimization=False, 
+               calc_type="const", name="heatpump_0", units=21,
+               time_dependent=False):
         self.fluids = fluids
         self.fluid_names = fluids.copy()
         self.mass_flows = mass_flows
@@ -309,6 +310,7 @@ class heat_pump_input:
         # self._abstract_state = abstract_state
         self.rootfind = rootfind
         self.opitimization = optimization
+        self. time_dependence= time_dependence
         
         
     def write_yaml(self, fname="st_hex_parameters_file.yaml"):
@@ -392,7 +394,43 @@ class heat_pump_input:
                 self.rootfind, self.opitimization ,
                 self.bounds)
     
+
+class heat_pump_eval(heat_pump):
+    """ A Heat pump class used for the calculations, including the abstract fluid states
+    """ 
+    def __init__(self, fluids, mass_flows, pressures, eta, areas, temp,
+               d_in, U, props,  composition, bounds, rootfind,
+               optimization=False, 
+               calc_type="const", name="heatpump_0", units=21,
+               time_dependent=False):
         
+        super().__init__(fluids, mass_flows, pressures, eta, areas, temp,
+                   d_in, U, props,  composition, bounds, rootfind,
+                   optimization=False, 
+                   calc_type="const", name="heatpump_0", units=21,
+                   time_dependent=False)
+        n_fluids =len(self.fluids)
+        self._abstract_state = []
+        if self.props == "REFPROP":
+            os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
+            from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
+            RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
+            self.units = RP.GETENUMdll(0, "MASS BASE SI").iEnum # be careful pressure is in Pa!
+
+            for ii in range(n_fluids):
+                self._abstract_state.append(fprop.setRPFluid(self.fluids[ii]))
+                self.fluids[ii] = ""
+               
+
+        elif self.props == "CoolProp":
+            
+            for ii in range(n_fluids):
+                self._abstract_state.append(CP.AbstractState("HEOS", self.fluids[ii]))
+            self.units = 21
+        
+    
+    
+
 if __name__ == "__main__":
     diameter = 15e-3  # tube diameter in m
     schleif = False  # calculation for different heat exchanger areas?

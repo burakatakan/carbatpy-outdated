@@ -2,10 +2,10 @@
 # Shell and Tube Heat Exchanger Parameters (within carbatpy):
 # B. Atakan 06.05.2023
 !!python/object:heat_exchanger.st_heat_exchanger_input
-Tin:
+temperature_in:
 - 354
 - 290
-U: 500
+heat_transfer_coefficient: 500
 calc_type: const
 composition:
 - - 0.6
