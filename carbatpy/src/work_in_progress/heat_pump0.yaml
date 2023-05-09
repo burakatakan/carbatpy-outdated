@@ -1,4 +1,4 @@
-!!python/object:__main__.heat_pump_input
+!!python/object:__main__.heat_pump
 areas:
 - 0.2827433388230814
 - 0.6597344572538565
@@ -40,4 +40,5 @@ rootfind: true
 temperatures:
 - 273
 - 330
+time_dependence: false
 units: 21

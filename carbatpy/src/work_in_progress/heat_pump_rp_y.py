@@ -41,13 +41,13 @@ p = [6e5, 15e5]
 
 FLUIDMODEL = "REFPROP"  # "REFPROP"  or"CoolProp"
 _props = FLUIDMODEL
-WF = ""
+WF = [""]
 if FLUIDMODEL == "REFPROP":
     os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
     from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary
     working_fluid = fluid_a
-    WF = fprop.setRPFluid(working_fluid)
-    working_fluid = ""
+    WF = [fprop.setRPFluid(working_fluid)]
+    working_fluid = [""]
     if _props =="REFPROP":
         RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
         _units = RP.GETENUMdll(0, "MASS BASE SI").iEnum # be careful pressure is in Pa!
@@ -55,7 +55,9 @@ if FLUIDMODEL == "REFPROP":
 
 elif FLUIDMODEL == "CoolProp":
     # h_0 = CP.PropsSI('H', 'P', p_0, 'T', temp_0, fluid_a)
-    working_fluid = CP.AbstractState("HEOS", fluid_a)
+    #must be checked!
+    working_fluid = [fluid_a]
+    WF = [CP.AbstractState("HEOS", fluid_a)]
     _units = 21
     
 
@@ -200,14 +202,15 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition=[1.0], WF=WF,
     """
     problem = 0
     druck = False
-    n_fluids =len(composition)
+    n_fluids =len(working_fluid)
     prop_input=[]
     for ii in range(n_fluids):
         prop_input.append([working_fluid[ii], composition[ii], 1, _units, _props, WF[ii]])
         
-        # caution when two fluid are used the ii must be checked!
+        # caution when two fluid are used the ii must be checked! _props is global!
     if n_fluids ==1:
         prop_input = prop_input[0]
+        
     else:
         print("2 fluids are not implemented yet!")
     # ^ all often needed input for the propertties of the working fluid
@@ -288,7 +291,7 @@ class heat_pump:
                d_in, U, props,  composition, bounds, rootfind,
                optimization=False, 
                calc_type="const", name="heatpump_0", units=21,
-               time_dependent=False):
+               time_dependence=False):
         self.fluids = fluids
         self.fluid_names = fluids.copy()
         self.mass_flows = mass_flows
@@ -445,27 +448,23 @@ if __name__ == "__main__":
     fname ="heat_pump0.yaml"
     #neu = heat_pump_input(p0[:2], p0[2], eta, U, areas, temp, working_fluid,composition, WF,
     #      True, False, bou )
-    neu = heat_pump_input([fluid_a], [p0[2]], p0[:2], eta, areas, temp, [diameter], U, 
+    neu = heat_pump([fluid_a], [p0[2]], p0[:2], eta, areas, temp, [diameter], U, 
                           _props, [composition], bou, True, False)
     
     with open(fname, mode="wt", encoding="utf-8") as file:
         yaml.dump(neu, file)
         # yaml.dump(bou, file)
     loes_input=neu.all_out()
-    loes0 = opti.root(heat_pump_ht, [*loes_input[0],*loes_input[1]],
+    loes = opti.root(heat_pump_ht, [*loes_input[0],*loes_input[1]],
                      args=( *loes_input[2:], ),
                      options={"factor": .25})
  
-    loes = opti.root(heat_pump_ht, p0,
-                     args=(eta, U, areas, temp, working_fluid,composition, WF,
-                           True, False, bou),
-                     options={"factor": .25})
+    
     if loes.success:
+        print("-"*30)
     
         st, qw, A_hg, cop, cop_carnot, eta_rat, p_compr, q_h_dot = \
-            heat_pump_ht(loes.x, eta, U, areas, temp, working_fluid, 
-                         composition, WF,
-                         False)
+            heat_pump_ht(loes.x, *loes_input[2:9], False, False)
         sortierung =[0, 1, 3, 4, 2, 0]  # order of the states along the cycle
         plt.axhline(temp[0])
         plt.axhline(temp[1])
