@@ -17,6 +17,7 @@ fn = "heat_exchanger_input0.xlsx"          # Dateiname
 
 def read_hex_file(fn, out):
     # global d, dfs, v_sp, compo_all
+    all_out =True
     druck = False
     xl = pd.ExcelFile(fn, engine='openpyxl')   # Einlesen
     if druck:
@@ -31,12 +32,17 @@ def read_hex_file(fn, out):
         blatt0 = sheet    # erstes Blatt in der Datei
         df1 = xl.parse(blatt0)
         dfs.append(df1)
-        d = df1.values
+        d = df1.to_numpy()
         data.append(d)
         # print(sheet, sheet == 'Geometry', d[:,0])
         # print("Alles im Blatt: \n%10s" % (df1))
         n_app = ""
-        v_sp = np.where(df1.columns == "value")
+        c_names =df1.columns
+        value_sp = np.where(c_names == "value")
+        name_sp = np.where(c_names == "variable_name")
+        locals()[sheet+"_dict"] = {}
+        for nam in df1["variable_name"]:
+            locals()[sheet+"_dict"] = dict([name_sp, d[:,value_sp]])
 
         if sheet[:3] == 'Flu':
             fln = int(sheet[-1])-1
@@ -47,9 +53,9 @@ def read_hex_file(fn, out):
                 if pd.notna(i):
                     fl_names.append(i)
                     n_zeile = np.where(d[:, 0] == 'fl'+str(j-1))[0]
-                    compo.append(*d[n_zeile, v_sp])
+                    compo.append(*d[n_zeile, value_sp])
                     if druck:
-                        print(j, i, compo, n_zeile, v_sp, 'fl'+str(j-1))
+                        print(j, i, compo, n_zeile, value_sp, 'fl'+str(j-1))
 
             fluid_no = len(fl_names)
             if fluid_no > 1:
@@ -62,20 +68,27 @@ def read_hex_file(fn, out):
 
         for i, name in enumerate(d[:, 0]):
             if pd.isna(d[i, 2]):
-                globals()[name+n_app] = d[i, 1]
+                locals()[name+n_app] = d[i, 1]
             else:
-                globals()[name+n_app] = d[i, 1:3]
+                locals()[name+n_app] = d[i, 1:3]
 
     xl.close()
-    if out == "HEXsimple":
-        # all what is needed for heat_exchanger.counterflow_hex :
-        return (fluids, [m_dot0[0], m_dot1[0]], [p_in0[0], p_in1[0]], length,
-                d_in, U, tubes, [props0, props1], compo_all)
-    else: print(f"{out} is not implemented yet!")
+    if all_out:
+        return compo_all,locals()
+    
+    else:
+        if out == "HEXsimple":
+            # all what is needed for heat_exchanger.counterflow_hex :
+            return (fluids, [m_dot0[0], m_dot1[0]], [p_in0[0], p_in1[0]], length,
+                    d_in, U, tubes, [props0, props1], compo_all)
+    
+        else: print(f"{out} is not implemented yet!")
 
 
 if __name__ == "__main__":
-    print(read_hex_file(fn, "HEXsimple"))
+    a=read_hex_file(fn, "HEXsimple")
+    locals().update(a[1])  # set all variables from excel file
+    print(a)
 
     # print("Ein Wert: %10s"%(df1.wert1[2]))
     # a=df1.Wert2[0]

@@ -20,6 +20,9 @@ composition:
 compressor_eta: 0.65
 d_in:
 - 0.015
+delta_temp:
+- 15.0
+- 10.0
 fluid_names:
 - Propane * Pentane * Dimethylether
 fluids:

@@ -39,7 +39,7 @@ print(f"Solution found: {res.success},  {res.message}")
 
 # plotting and evalution:
 # evaluate results (and plot)
-f1, f2, ds, dq = hex2.he_state(res, 6, y_file_name)
+f1, f2, ds, dq = hex2.he_state(res, 6, y_file_name+"calc")
 
 
 # also adding the input to the Excel file as a new sheet

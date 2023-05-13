@@ -147,7 +147,7 @@ def heat_pump_opti(para, eta, U, T_s, working_fluid, bounds, WF):
 
 def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition=[1.0], WF=WF,
                  rootfind =True, optim=False,
-                 bounds=None):
+                 bounds=None, delta_temp=[0, 0.]):
     """
     Heat pump cycle with isothermal source and sink, x=0 after condenser.
 
@@ -240,7 +240,7 @@ def heat_pump_ht(p, eta, U, A, T_s, working_fluid, composition=[1.0], WF=WF,
         if state[2, 0] < T_s[1]: problem = 2
         # print ("Problem:", problem, p)
         state[6, :] = fprop.prop_pq(p[1], 1, *prop_input)  # Taupunkt
-        if state[6, 0] <= T_s[1]: problem = 3
+        if state[6, 0] <= T_s[1] -delta_temp[0]: problem = 3
         q_w[1] = (state[6, 2] - state[2, 2])  # Waermeuebtragung bis dahin
 
         state[7, :] = fprop.prop_pq(p[1], 0, *prop_input)  # gerade kondensiert, Wunsch
@@ -291,7 +291,8 @@ class heat_pump:
                d_in, U, props,  composition, bounds, rootfind,
                optimization=False, 
                calc_type="const", name="heatpump_0", units=21,
-               time_dependence=False):
+               time_dependence=False,
+               delta_temp=[15., 10.]):
         self.fluids = fluids
         self.fluid_names = fluids.copy()
         self.mass_flows = mass_flows
@@ -314,6 +315,7 @@ class heat_pump:
         self.rootfind = rootfind
         self.opitimization = optimization
         self. time_dependence= time_dependence
+        self.delta_temp = delta_temp
         
         
     def write_yaml(self, fname="st_hex_parameters_file.yaml"):
@@ -395,7 +397,7 @@ class heat_pump:
                 self.areas, self.temperatures,
                 self.fluids, self.composition, self._abstract_state ,
                 self.rootfind, self.opitimization ,
-                self.bounds)
+                self.bounds, self.delta_temp)
     
 
 class heat_pump_eval(heat_pump):
@@ -405,13 +407,15 @@ class heat_pump_eval(heat_pump):
                d_in, U, props,  composition, bounds, rootfind,
                optimization=False, 
                calc_type="const", name="heatpump_0", units=21,
-               time_dependent=False):
+               time_dependent=False,
+               delta_temp=[15., 10.]):
         
         super().__init__(fluids, mass_flows, pressures, eta, areas, temp,
                    d_in, U, props,  composition, bounds, rootfind,
                    optimization=False, 
                    calc_type="const", name="heatpump_0", units=21,
-                   time_dependent=False)
+                   time_dependent=False, 
+                   delta_temp=[15., 10.])
         n_fluids =len(self.fluids)
         self._abstract_state = []
         if self.props == "REFPROP":

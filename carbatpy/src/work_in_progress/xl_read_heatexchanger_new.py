@@ -132,10 +132,13 @@ def read_hex_file(fn, out, all_out = False):
                      Geometry_Instance.d_in["value_2"]],
                      Geometry_Instance.U["value_1"],
                      Geometry_Instance.tubes["value_1"],
+                     Geometry_Instance.no_points["value_1"],
+                     Geometry_Instance.calc_type["value_1"],
                      [Fluid1_Instance.props["value"],
                      Fluid2_Instance.props["value"]],
                      [Fluid1_Instance.composition_all,
                      Fluid2_Instance.composition_all],
+                     Fluid1_Instance.units["value"]
 
                      ]
             # all what is needed for heat_exchanger.counterflow_hex :

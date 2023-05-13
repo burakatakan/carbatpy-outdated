@@ -371,7 +371,7 @@ class counterflow_hex(heat_exchanger):
             pd0 = pd.DataFrame(alles.T, columns=names)
             # zzz = pd.DataFrame(dict( (key, value) for (key, value) in self.__dict__.items()))
             res0 = pd.DataFrame(res0, ["total"])
-            with pd.ExcelWriter(fname+".xlsx") as writer:
+            with pd.ExcelWriter(fname+".xlsx", mode="a") as writer:
                 pd0.to_excel(writer, sheet_name="results")
                 # zzz.to_excel(writer, sheet_name="input")
                 res0.to_excel(writer, sheet_name="overallRes")
@@ -472,7 +472,7 @@ class st_heat_exchanger_input:
 
         self.calc_type = calc_type
         if calc_type == "const":
-            self.heat_tarnsfer_coefficient = U
+            self.heat_transfer_coefficient = U
         self.name = name
         self.temperture_in = Tin
         self.no_tubes = no_tubes
@@ -565,7 +565,151 @@ class st_heat_exchanger_input:
                 self.calc_type, self.name,
                 self.composition, self.props,
                 self.units)
-
+    def read_hex_file(fn, out, all_out = False):
+        """
+        Reads an Excel File with information about heat exchangers, fluids etc.
+        is used within carbatpy and the module heat_exchanger (see there for the
+         specific output)
+    
+        Parameters
+        ----------
+        fn : string
+            name of an excel-file with at least 4 sheets as mentioned above, which 
+            list the variable names, values and further parameters and comments.
+        out : string 
+            only "HEXSimple" implemented so far, for the simple heat exchanger 
+            calculations with actual fluid properties in a counterflow 
+            configuration.
+        all_out : boolean
+            if True a list with 4 Instances with variable names and values are 
+            returned together with all local variables (dictionaries) for usage
+            in other modules.
+    
+        Returns
+        -------
+        list 
+            if HEXSimple: a list with the required values for setting up the problem
+            if (internally).
+            if all_out is True, see above.
+    
+        """
+        
+       
+        druck = False  # printing?
+        xl = pd.ExcelFile(fn, engine='openpyxl')   # Einlesen
+        if druck:
+            print(f"sheet names in {fn}: {xl.sheet_names}")
+    
+        data = []
+        dfs = []
+        outputs = []
+    
+        for sheet in xl.sheet_names:
+            blatt0 = sheet    # erstes Blatt in der Datei
+            df1 = xl.parse(blatt0)
+            dfs.append(df1)
+            # d = df1.to_numpy()
+            # data.append(d)
+            n_app = ""
+            c_names = df1.columns
+            dict_list = locals()[blatt0] = [v.dropna().to_dict()
+                                            for k, v in df1.iterrows()]
+            bi = locals()[blatt0+"_Instance"] = type(blatt0, (object,), {})
+            if blatt0 == "Geometry":
+                Geometry_Instance = bi
+            elif blatt0 == "Fluid_1":
+                Fluid1_Instance = bi
+            elif blatt0 == "Fluid_2":
+                Fluid2_Instance = bi
+            elif blatt0 == "Problem_description":
+                Problem_description = bi
+            else:
+                print(f"Warning: sheet {blatt0} is not used!")
+    
+            fluids = []
+            print(blatt0, dict_list)
+          
+    
+            for di in dict_list:
+                # name a class using a string
+                # add an attribute name from a strng
+                setattr(bi, di["variable_name"], di)
+    
+            if sheet[:3] == 'Flu':
+    
+                fl_names = []
+                compo = []
+                
+                fluid_no = bi.number_compounds["value"]
+                for ii in range(fluid_no):
+                    fname = getattr(bi, "fl"+str(ii+1))
+                    fl_names.append(fname['name_fluid'])
+    
+                    compo.append(fname["value"])
+                    if druck:
+                        print(ii, compo, 'fl'+str(ii+1), fl_names)
+    
+                if fluid_no > 1:
+                    print(fl_names, "---")
+                    fluids = "*".join(fl_names)
+    
+                else:
+                    fluids = fl_names[0]
+                enthalpy = tp(bi.T_in["value"],bi.p_in["value"],fluids, compo, props=bi.props["value"])[2]
+               
+                
+                
+                print("h:", enthalpy, fluids,compo)
+                setattr(bi, "composition_all", compo)
+                setattr(bi, "fluidNamesREFPROP", fluids)
+                setattr(bi, "enthalpy", enthalpy)
+                dict_list.append({"composition_all": compo,
+                                 "fluidNamesREFPROP": fluids})
+    
+            outputs.append(bi)
+    
+        xl.close()
+        if all_out:
+            return outputs, locals()
+    
+        elif out == "HEXsimple": # BA Reihnfolge prüfen
+            if Fluid1_Instance.props["value"] == Fluid2_Instance.props["value"]:
+                props = Fluid1_Instance.props["value"]
+            else: 
+                print(f"Props should be the same for both fluids, check input file {fn}")
+                props="Error!"
+            
+            
+            outputHex = [[Fluid1_Instance.fluidNamesREFPROP,
+                          Fluid2_Instance.fluidNamesREFPROP],
+                         [Fluid1_Instance.m_dot["value"],
+                         Fluid2_Instance.m_dot["value"]],
+                         [Fluid1_Instance.p_in["value"],
+                         Fluid2_Instance.p_in["value"]],
+                         [Fluid1_Instance.enthalpy,
+                         Fluid2_Instance.enthalpy],
+                         Geometry_Instance.length["value_1"],
+                         [Geometry_Instance.d_in["value_1"],
+                         Geometry_Instance.d_in["value_2"]],
+                         Geometry_Instance.U["value_1"],
+                         Geometry_Instance.tubes["value_1"],
+                         Geometry_Instance.no_points["value_1"],
+                         Geometry_Instance.calc_type["value_1"],
+                         Geometry_Instance.hex_name["value_1"],
+                         
+                         [Fluid1_Instance.composition_all,
+                         Fluid2_Instance.composition_all],
+                         props,
+                         Fluid1_Instance.units["value"]
+    
+                         ]
+            # all what is needed for heat_exchanger.counterflow_hex
+            print(outputHex)
+            return outputHex
+                
+    
+        else:
+                print(f"{out} is not implemented yet!")
 
 if __name__ == "__main__":
 
