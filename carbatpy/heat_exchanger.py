@@ -132,9 +132,9 @@ class heat_exchanger:
 
 class counterflow_hex(heat_exchanger):
     def __init__(self, fluids, mass_flows, pressures, enthalpies, length,
-                 diameters, U=10., no_tubes=1, no_points=100,
-                 calc_type="const", name="HEX_0", compositions=[[1.0], [1.0]],
-                 props="REFPROP", units=21):
+                 diameters, U=10., no_tubes=1, no_points=100,props="REFPROP",
+                 compositions=[[1.0], [1.0]],calc_type="const", name="HEX_0",
+                  units=21):
         """
         Counter flow heat exchanger class initialization, for double-pipe 
         heat exchangers
@@ -151,7 +151,7 @@ class counterflow_hex(heat_exchanger):
         pressures : list or numpy-array length 2
             initial pressures of each fluid.
         enthalpies : list or numpy-array length 2
-            initial pressures of each fluid.
+            initial enthalpies of each fluid.
         length : float
             heat exchanger length in m.
         diameters : array length 2
@@ -186,7 +186,7 @@ class counterflow_hex(heat_exchanger):
         calculate = True
         self.fluids = fluids
 
-        self.fluids = ["", ""]
+        
         self.compositions = compositions
         self.props = props
         self.units = units
@@ -206,13 +206,20 @@ class counterflow_hex(heat_exchanger):
         self.UA = self.area * self.U
         if calculate:
             self.RP = [setRPFluid(fluids[0]), setRPFluid(fluids[1])]
+            # self.fluids = ["", ""]  # IF This is set, the endpoint seems to be wrong
             qm, qd, f_states = self.q_max(1)
             self.min_flow = np.where(qd == qm)[0][0]
-            # print(qm, self.min_flow)
+            print("qm:",qm, self.min_flow, hp(self.enthalpies[0],
+                                              self.pressures[0],
+                                              self.fluids[0],
+                                              self.compositions[0]),self.enthalpies[0],
+                                                                                self.pressures[0],
+                                                                                self.fluids[0],self.fluids[0],
+                                                                                self.compositions[0], self.props)
             self.qm_specific = qm / self.mass_flows[self.min_flow]
             self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
-                                    self.enthalpies[0] + qm/2, no_points)
-            self.h_out = np.linspace(self.enthalpies[1] - qm/2,
+                                    self.enthalpies[0] + qm, no_points)
+            self.h_out = np.linspace(self.enthalpies[1] - qm,
                                      self.enthalpies[1], no_points)
 
     def energy(self, x, h):
@@ -290,8 +297,8 @@ class counterflow_hex(heat_exchanger):
 
         """
         y = np.zeros((2, self.no_points))
-        y[0, :] = self.h_in
-        y[1, :] = self.h_out
+        y[0, :] = self.h_in #enthalpies[0]
+        y[1, :] = self.h_out #enthalpies[1]
 
         result = solve_bvp(self.energy, self.bc, self.x, y, tol=5e-3,
                            max_nodes=1000)
@@ -442,8 +449,6 @@ class st_heat_exchanger_input:
             along heat exchanger
         name : string.
             name of the heat-exchanger, default = "HEX_0"
-        Tin : list of 2 floats
-            temperatures of the two fluids entering
         no_tubes : integer
             number of tubes within the single shell
         no_points : integer
@@ -471,10 +476,9 @@ class st_heat_exchanger_input:
         self.enthalpies = enthalpies
 
         self.calc_type = calc_type
-        if calc_type == "const":
-            self.heat_transfer_coefficient = U
+        self.heat_transfer_coefficient = U
         self.name = name
-        self.temperture_in = Tin
+        # self.temperature_in = Tin
         self.no_tubes = no_tubes
         self.no_points = no_points
         self.d_in = d_in
@@ -561,9 +565,8 @@ class st_heat_exchanger_input:
         """
         return (self.fluids, self.mass_flows, self.pressures, self.enthalpies,
                 self.length, self.d_in, self.heat_transfer_coefficient, 
-                self.no_tubes, self.no_points,
-                self.calc_type, self.name,
-                self.composition, self.props,
+                self.no_tubes, self.no_points,self.props,self.composition, 
+                self.calc_type, self.name,               
                 self.units)
     def read_hex_file(fn, out, all_out = False):
         """
@@ -645,7 +648,7 @@ class st_heat_exchanger_input:
                     fname = getattr(bi, "fl"+str(ii+1))
                     fl_names.append(fname['name_fluid'])
     
-                    compo.append(fname["value"])
+                    compo.append(float(fname["value"]))
                     if druck:
                         print(ii, compo, 'fl'+str(ii+1), fl_names)
     
@@ -655,11 +658,15 @@ class st_heat_exchanger_input:
     
                 else:
                     fluids = fl_names[0]
-                enthalpy = tp(bi.T_in["value"],bi.p_in["value"],fluids, compo, props=bi.props["value"])[2]
+                state_in = tp(float(bi.T_in["value"]),
+                              float(bi.p_in["value"]),
+                              fluids, compo, props=bi.props["value"])
+                # print(state_in)
+                enthalpy = state_in[2]
                
                 
                 
-                print("h:", enthalpy, fluids,compo)
+                print("h:", enthalpy, fluids,compo, bi.T_in["value"],bi.p_in["value"],fluids, compo, bi.props["value"])
                 setattr(bi, "composition_all", compo)
                 setattr(bi, "fluidNamesREFPROP", fluids)
                 setattr(bi, "enthalpy", enthalpy)
@@ -694,18 +701,21 @@ class st_heat_exchanger_input:
                          Geometry_Instance.U["value_1"],
                          Geometry_Instance.tubes["value_1"],
                          Geometry_Instance.no_points["value_1"],
+                         props,
+                         [Fluid1_Instance.composition_all,
+                         Fluid2_Instance.composition_all],
                          Geometry_Instance.calc_type["value_1"],
                          Geometry_Instance.hex_name["value_1"],
                          
-                         [Fluid1_Instance.composition_all,
-                         Fluid2_Instance.composition_all],
-                         props,
+                         
+                        
                          Fluid1_Instance.units["value"]
     
                          ]
+            hexin = st_heat_exchanger_input(*outputHex,)
             # all what is needed for heat_exchanger.counterflow_hex
             print(outputHex)
-            return outputHex
+            return hexin # outputHex
                 
     
         else:
@@ -774,7 +784,7 @@ if __name__ == "__main__":
     tf = time()
 
     print("time:", tf-t0, tf-t1)
-    f1, f2, ds, dq = heat_ex.he_state(res, 6)  # evaluate results (and plot)
+    f1, f2, ds, dq = heat_ex.he_state(res, 6, "new.x")  # evaluate results (and plot)
     ex_in = heat_ex.exergy_entering()
     print("Entropy production rate: %2.2e W/K, exergy loss rate %3.3f W, dq %3.2f"
           % (ds, ds * T0, dq))

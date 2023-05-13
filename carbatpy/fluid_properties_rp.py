@@ -264,6 +264,7 @@ def uv(u, v, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
         #     alle = [_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]
         # elif option == 1:
         #     alle = [_temp, p,  h, 1/rho, s, x]
+    else: print(f"Warning: props not set or invalid, actual value: {props}")
     return np.array(alle)
 
 
@@ -322,6 +323,7 @@ def sp(s, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
             alle = [_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]
         elif option == 1:
             alle = [_temp, p,  h, 1/rho, s, x]
+    else: print(f"Warning: props not set or invalid, actual value: {props}")
     return np.array(alle)
 
 
@@ -418,6 +420,7 @@ def tp(temp, p,  fluid="", composition=[1.0], option=1, units=_units,
                              lambda_s, prandtl, phase])
         elif option == 1:
             return [temp, p,  h, 1/rho, s,  x]
+    else: print(f"Warning: props not set or invalid, actual value: {props}")
 
     return np.array(alle)
 #  below must be checked!
