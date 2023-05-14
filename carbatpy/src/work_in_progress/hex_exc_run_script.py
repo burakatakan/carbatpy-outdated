@@ -74,7 +74,7 @@ for file in dircont:
     allparts = file.split(".")
     if len(allparts) > 1:
         nbase, nend = allparts
-        if nbase == y_file_name0:
+        if nbase == y_file_name0+dt_string:
             fname = nbase+dt_string+"."+nend
             resDir0 = os.path.join(resDir, fname)
             if nend == "yaml" or nend =="xlsx":

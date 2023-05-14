@@ -132,9 +132,9 @@ class heat_exchanger:
 
 class counterflow_hex(heat_exchanger):
     def __init__(self, fluids, mass_flows, pressures, enthalpies, length,
-                 diameters, U=10., no_tubes=1, no_points=100,props="REFPROP",
-                 compositions=[[1.0], [1.0]],calc_type="const", name="HEX_0",
-                  units=21):
+                 diameters, U=10., no_tubes=1, no_points=100, props="REFPROP",
+                 compositions=[[1.0], [1.0]], calc_type="const", name="HEX_0",
+                 units=21):
         """
         Counter flow heat exchanger class initialization, for double-pipe 
         heat exchangers
@@ -185,8 +185,8 @@ class counterflow_hex(heat_exchanger):
         """
         calculate = True
         self.fluids = fluids
+        self.fluid_names = fluids  # when changing fluids to "" (later)
 
-        
         self.compositions = compositions
         self.props = props
         self.units = units
@@ -205,17 +205,12 @@ class counterflow_hex(heat_exchanger):
         self.area = self.length * self.perimeter
         self.UA = self.area * self.U
         if calculate:
-            self.RP = [setRPFluid(fluids[0]), setRPFluid(fluids[1])]
-            # self.fluids = ["", ""]  # IF This is set, the endpoint seems to be wrong
+            self.RP = [setRPFluid(self.fluids[0]), setRPFluid(self.fluids[1])]
+            # IF This is set, the entering state of the first fluidof the heat exchanger seems to be wrong
+            # self.fluids = ["", ""]
             qm, qd, f_states = self.q_max(1)
             self.min_flow = np.where(qd == qm)[0][0]
-            print("qm:",qm, self.min_flow, hp(self.enthalpies[0],
-                                              self.pressures[0],
-                                              self.fluids[0],
-                                              self.compositions[0]),self.enthalpies[0],
-                                                                                self.pressures[0],
-                                                                                self.fluids[0],self.fluids[0],
-                                                                                self.compositions[0], self.props)
+            
             self.qm_specific = qm / self.mass_flows[self.min_flow]
             self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
                                     self.enthalpies[0] + qm, no_points)
@@ -247,17 +242,17 @@ class counterflow_hex(heat_exchanger):
             both changes in specific enthalpy in positive x-direction in J/(kg m).
 
         """
+        Ti = np.zeros((2,len(x)))
+        for i in range(2):
+            T = hp_v(h[i], self.pressures[i], self.fluids[i], units=self.units,
+                         props=self.props, option=1, composition=self.compositions[i],
+                         RP=self.RP[i])[0]
+            Ti[i,:] =T
 
-        T1 = hp_v(h[1], self.pressures[1], self.fluids[1], units=self.units,
-                  props=self.props, option=1, composition=self.compositions[1],
-                  RP=self.RP[1])[0]
-        T0 = hp_v(h[0], self.pressures[0], self.fluids[0], units=self.units,
-                  props=self.props, option=1, composition=self.compositions[0],
-                  RP=self.RP[0])[0]
-        q_konv = T1-T0
+        q_konv = Ti[1,:]-Ti[0,:]
 
-        dh0 = self.U * self.perimeter / self.mass_flows[0]*q_konv
-        dh1 = self.U * self.perimeter / self.mass_flows[1]*q_konv
+        dh0 = self.U * self.perimeter / self.mass_flows[0] * q_konv
+        dh1 = self.U * self.perimeter / self.mass_flows[1] * q_konv
         return np.array([dh0, dh1])
 
     def bc(self, ha, hb):
@@ -297,8 +292,8 @@ class counterflow_hex(heat_exchanger):
 
         """
         y = np.zeros((2, self.no_points))
-        y[0, :] = self.h_in #enthalpies[0]
-        y[1, :] = self.h_out #enthalpies[1]
+        y[0, :] = self.enthalpies[0]
+        y[1, :] = self.enthalpies[1]
 
         result = solve_bvp(self.energy, self.bc, self.x, y, tol=5e-3,
                            max_nodes=1000)
@@ -564,16 +559,17 @@ class st_heat_exchanger_input:
 
         """
         return (self.fluids, self.mass_flows, self.pressures, self.enthalpies,
-                self.length, self.d_in, self.heat_transfer_coefficient, 
-                self.no_tubes, self.no_points,self.props,self.composition, 
-                self.calc_type, self.name,               
+                self.length, self.d_in, self.heat_transfer_coefficient,
+                self.no_tubes, self.no_points, self.props, self.composition,
+                self.calc_type, self.name,
                 self.units)
-    def read_hex_file(fn, out, all_out = False):
+
+    def read_hex_file(fn, out, all_out=False):
         """
         Reads an Excel File with information about heat exchangers, fluids etc.
         is used within carbatpy and the module heat_exchanger (see there for the
          specific output)
-    
+
         Parameters
         ----------
         fn : string
@@ -587,26 +583,25 @@ class st_heat_exchanger_input:
             if True a list with 4 Instances with variable names and values are 
             returned together with all local variables (dictionaries) for usage
             in other modules.
-    
+
         Returns
         -------
         list 
             if HEXSimple: a list with the required values for setting up the problem
             if (internally).
             if all_out is True, see above.
-    
+
         """
-        
-       
+
         druck = False  # printing?
         xl = pd.ExcelFile(fn, engine='openpyxl')   # Einlesen
         if druck:
             print(f"sheet names in {fn}: {xl.sheet_names}")
-    
+
         data = []
         dfs = []
         outputs = []
-    
+
         for sheet in xl.sheet_names:
             blatt0 = sheet    # erstes Blatt in der Datei
             df1 = xl.parse(blatt0)
@@ -628,34 +623,33 @@ class st_heat_exchanger_input:
                 Problem_description = bi
             else:
                 print(f"Warning: sheet {blatt0} is not used!")
-    
+
             fluids = []
-            print(blatt0, dict_list)
-          
-    
+            # print(blatt0, dict_list)
+
             for di in dict_list:
                 # name a class using a string
                 # add an attribute name from a strng
                 setattr(bi, di["variable_name"], di)
-    
+
             if sheet[:3] == 'Flu':
-    
+
                 fl_names = []
                 compo = []
-                
+
                 fluid_no = bi.number_compounds["value"]
                 for ii in range(fluid_no):
                     fname = getattr(bi, "fl"+str(ii+1))
                     fl_names.append(fname['name_fluid'])
-    
+
                     compo.append(float(fname["value"]))
                     if druck:
                         print(ii, compo, 'fl'+str(ii+1), fl_names)
-    
+
                 if fluid_no > 1:
                     print(fl_names, "---")
                     fluids = "*".join(fl_names)
-    
+
                 else:
                     fluids = fl_names[0]
                 state_in = tp(float(bi.T_in["value"]),
@@ -663,30 +657,32 @@ class st_heat_exchanger_input:
                               fluids, compo, props=bi.props["value"])
                 # print(state_in)
                 enthalpy = state_in[2]
-               
+
+                test = hp(enthalpy,
+                          float(bi.p_in["value"]),
+                          fluids, compo, props=bi.props["value"])
+
                 
-                
-                print("h:", enthalpy, fluids,compo, bi.T_in["value"],bi.p_in["value"],fluids, compo, bi.props["value"])
                 setattr(bi, "composition_all", compo)
                 setattr(bi, "fluidNamesREFPROP", fluids)
                 setattr(bi, "enthalpy", enthalpy)
                 dict_list.append({"composition_all": compo,
                                  "fluidNamesREFPROP": fluids})
-    
+
             outputs.append(bi)
-    
+
         xl.close()
         if all_out:
             return outputs, locals()
-    
-        elif out == "HEXsimple": # BA Reihnfolge prüfen
+
+        elif out == "HEXsimple":  # BA Reihnfolge prüfen
             if Fluid1_Instance.props["value"] == Fluid2_Instance.props["value"]:
                 props = Fluid1_Instance.props["value"]
-            else: 
-                print(f"Props should be the same for both fluids, check input file {fn}")
-                props="Error!"
-            
-            
+            else:
+                print(
+                    f"Props should be the same for both fluids, check input file {fn}")
+                props = "Error!"
+
             outputHex = [[Fluid1_Instance.fluidNamesREFPROP,
                           Fluid2_Instance.fluidNamesREFPROP],
                          [Fluid1_Instance.m_dot["value"],
@@ -706,20 +702,20 @@ class st_heat_exchanger_input:
                          Fluid2_Instance.composition_all],
                          Geometry_Instance.calc_type["value_1"],
                          Geometry_Instance.hex_name["value_1"],
-                         
-                         
-                        
+
+
+
                          Fluid1_Instance.units["value"]
-    
+
                          ]
             hexin = st_heat_exchanger_input(*outputHex,)
             # all what is needed for heat_exchanger.counterflow_hex
             print(outputHex)
-            return hexin # outputHex
-                
-    
+            return hexin  # outputHex
+
         else:
-                print(f"{out} is not implemented yet!")
+            print(f"{out} is not implemented yet!")
+
 
 if __name__ == "__main__":
 
@@ -784,7 +780,8 @@ if __name__ == "__main__":
     tf = time()
 
     print("time:", tf-t0, tf-t1)
-    f1, f2, ds, dq = heat_ex.he_state(res, 6, "new.x")  # evaluate results (and plot)
+    f1, f2, ds, dq = heat_ex.he_state(
+        res, 6, "new.x")  # evaluate results (and plot)
     ex_in = heat_ex.exergy_entering()
     print("Entropy production rate: %2.2e W/K, exergy loss rate %3.3f W, dq %3.2f"
           % (ds, ds * T0, dq))

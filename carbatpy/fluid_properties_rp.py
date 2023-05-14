@@ -69,7 +69,8 @@ def setRPFluid(fluid):
     """
     SP = REFPROPFunctionLibrary(os.environ['RPPREFIX']) #secondary fluid
     SP.SETPATHdll(os.environ['RPPREFIX'])
-    SP.SETFLUIDSdll(fluid)
+    ierr = SP.SETFLUIDSdll(fluid)
+    if ierr != 0: print(f"Fehler in setfluid {ierr}")
     return SP
     
     
