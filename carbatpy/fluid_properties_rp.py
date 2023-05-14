@@ -30,6 +30,7 @@ import os
 from time import time
 
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
+os.environ['RPPREFIXs'] = r'C:/Program Files (x86)/REFPROP/secondCopyREFPROP'
 _props = "REFPROP"  # or "CoolProp"
 _fl_properties_names = ("Temperature", "Pressure", "spec. Enthalpy",
                         "spec. Volume","spec. Entropy", "quality", 
@@ -52,7 +53,7 @@ else:
 __Tenv__ = 283.15  # Temp. of the environment in K
 __penv__ = 1.013e5  # Pressure of the environment in Pa
 
-def setRPFluid(fluid):
+def setRPFluid(fluid, modwf = RP, name='RPPREFIX'):
     """
     A new instnce of Refpropdll for the given fluid. It can then be called using fluid =""
 
@@ -67,10 +68,14 @@ def setRPFluid(fluid):
         for further usage.
 
     """
-    SP = REFPROPFunctionLibrary(os.environ['RPPREFIX']) #secondary fluid
-    SP.SETPATHdll(os.environ['RPPREFIX'])
+    
+
+    SP = modwf(os.environ[name]) #secondary fluid
+    SP.SETPATHdll(os.environ[name])
     ierr = SP.SETFLUIDSdll(fluid)
-    if ierr != 0: print(f"Fehler in setfluid {ierr}")
+    if ierr != 0: 
+        print(f"Fehler in setfluid {ierr}")
+        print(SP.ERRMSGdll(ierr))
     return SP
     
     
@@ -348,10 +353,10 @@ def hp_v(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props
     for _i in range(_n):
         if np.isscalar(p):
             alle[:, _i] = hp(h[_i], p, fluid, composition, option,
-                             units, props)
+                             units, props,RP)
         else:
             alle[:, _i] = hp(h[_i], p[_i], fluid, composition, option,
-                             units, props)
+                             units, props, RP)
     return alle
 
 
@@ -394,6 +399,7 @@ def tp(temp, p,  fluid="", composition=[1.0], option=1, units=_units,
     if props == "REFPROP":
         o = RP.REFPROP2dll(fluid, "TP", "H;D;S;QMASS", units,
                            0, temp, p, composition)
+        # print("tp:", composition, fluid, temp, p, o.Output[0:5])
         if option == 0:
             alle = []
 

@@ -113,6 +113,7 @@ class heat_exchanger:
                                 self.fluids[1], props=self.props,
                                 composition=self.compositions[1],
                                 RP=self.RP[1])
+        # print("final states:", final_states)
         for n in range(2):
             q_dot[n] = self.mass_flows[n] * (final_states[n, 2]
                                              - state_variables[n, 2])
@@ -205,9 +206,14 @@ class counterflow_hex(heat_exchanger):
         self.area = self.length * self.perimeter
         self.UA = self.area * self.U
         if calculate:
-            self.RP = [setRPFluid(self.fluids[0]), setRPFluid(self.fluids[1])]
+            import sys
+            from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary as modwf
+            
+            from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary as modsf
+            self.RP = [setRPFluid(self.fluids[0],modwf,'RPPREFIX'), 
+                       setRPFluid(self.fluids[1], modsf,'RPPREFIXs')]
             # IF This is set, the entering state of the first fluidof the heat exchanger seems to be wrong
-            # self.fluids = ["", ""]
+            
             qm, qd, f_states = self.q_max(1)
             self.min_flow = np.where(qd == qm)[0][0]
             
@@ -216,6 +222,7 @@ class counterflow_hex(heat_exchanger):
                                     self.enthalpies[0] + qm, no_points)
             self.h_out = np.linspace(self.enthalpies[1] - qm,
                                      self.enthalpies[1], no_points)
+            self.fluids = ["", ""]
 
     def energy(self, x, h):
         """
@@ -248,6 +255,7 @@ class counterflow_hex(heat_exchanger):
                          props=self.props, option=1, composition=self.compositions[i],
                          RP=self.RP[i])[0]
             Ti[i,:] =T
+            # print(i,self.fluids[i], self.compositions[i])
 
         q_konv = Ti[1,:]-Ti[0,:]
 
@@ -647,7 +655,7 @@ class st_heat_exchanger_input:
                         print(ii, compo, 'fl'+str(ii+1), fl_names)
 
                 if fluid_no > 1:
-                    print(fl_names, "---")
+                    if druck: print(fl_names, "---")
                     fluids = "*".join(fl_names)
 
                 else:
@@ -710,7 +718,7 @@ class st_heat_exchanger_input:
                          ]
             hexin = st_heat_exchanger_input(*outputHex,)
             # all what is needed for heat_exchanger.counterflow_hex
-            print(outputHex)
+            print("Properties from input file (Excel):\n", outputHex)
             return hexin  # outputHex
 
         else:
