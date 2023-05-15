@@ -11,7 +11,7 @@ Created on Thu Jan 31 17:46:25 2019
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm
+from carbatpy.fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm
 
 Rm = 8.3145  # gas constant J/mol/K
 Tu = 25. + 273.15  # ambient temperature
@@ -271,7 +271,17 @@ def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
     h_aus_s = z_ps(pZ[6], pZ[5], fluid, comp)[
         4]  # fl.zs_kg(['p','s'],[pZ[6],pZ[5]],['h'],fluid)[0]  # isentropic outlet enthalpy
     is_eff = (h_aus_s - pZ[4]) / (h_aus - pZ[4])  # isentropic efficiency
-
+    fig1, axs = plt.subplots(1,3)
+    axs[0].plot(z_it[:,0], z_it[:,8])
+    axs[0].set_xlabel("piston position")
+    axs[0].set_ylabel("u")
+    axs[1].plot(z_it[:,0], z_it[:,11])
+    axs[1].set_xlabel("piston position")
+    axs[1].set_ylabel("mass in zylinder")
+    axs[2].plot(z_it[:,0], z_it[:,12])
+    axs[2].set_xlabel("piston position")
+    axs[2].set_ylabel("thermal mass")
+    plt.show()
     return is_eff, degree_delivery
 
 
@@ -287,7 +297,7 @@ def getETA(T_e, p_e, p_a, fluid_in, comp, pV, pZ, z_it, IS, pZyk, IS0):
     pZ[0:6] = z_Tp(T_e, p_e, fluid,
                    comp)  # fl.zs_kg(['T','p'],[T_e,p_e],['T','p','v','u','h','s'],fluid) #state suction pipe
     pZ[6] = p_a  # pressure in pressure pipe
-    print(pZ)
+    #print(pZ)
     ############### set geometry ##################################
     z_it[:, 0] = np.linspace(0., 2 * np.pi, IS)
     z_it[:, 1] = -(pV[1] / 2. * (1. - np.cos(z_it[:, 0]) + pV[2] *
@@ -340,7 +350,7 @@ if __name__ == "__main__":
     dt_all = np.linspace(9.5, 20.5, 3)
     out = []
     for dt in dt_all:
-        print(f"{dt+273.15} {pe} {pa} {fluid} {comp} {pV} {pZ} {z_it} {IS} {pZyk} {IS0}")
+        #print(f"{dt+273.15} {pe} {pa} {fluid} {comp} {pV} {pZ} {z_it} {IS} {pZyk} {IS0}")
         o1 = getETA(dt + 273.15, pe, pa, fluid, comp, pV, pZ, z_it, IS, pZyk, IS0)
         # o1.append((np.max(z_it[:,11]) - np.min(z_it[:,11]) * pV[7]))  # mass flow
         out.append(o1)

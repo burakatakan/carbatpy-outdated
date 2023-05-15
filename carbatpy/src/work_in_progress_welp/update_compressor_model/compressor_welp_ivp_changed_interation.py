@@ -15,7 +15,6 @@ import carbatpy.fluid_properties_rp as fprop
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
 RP = REFPROPFunctionLibrary(os.environ['RPPREFIX'])
 RP.SETPATHdll(os.environ['RPPREFIX'])
-RP.SETFLUIDSdll("Water")
 
 Rm = 8.3145  # gas constant J/mol/K
 Tu = 25. + 273.15  # ambient temperature
@@ -59,7 +58,7 @@ def set_up(T_inlet, p_inlet, p_outlet, resolution):
     y_timetrack_u.append(y_start[1])
     y_timetrack_t.append(y_start[2])
     while err > 0.5:
-        res = solve_ivp(fun, [0, x_max], y_start, method='RK45', args=[pV, a_head, pZ, pZyk], max_step=1/resolution)
+        res = solve_ivp(fun, [0, x_max], y_start, method='RK23', args=[pV, a_head, pZ, pZyk], max_step=1/resolution)
         err = np.sqrt((res.y[0, -1] - y_start[0]) ** 2) + np.sqrt((res.y[1, -1] - y_start[1]) ** 2) + np.sqrt((res.y[2, -1] - y_start[2]) ** 2)
         pZyk[1] = help_variable
         if pZyk[1] == Aeff_o:
@@ -114,7 +113,7 @@ def cal_efficiency_delivery(res, pV, pZ, pZyk, a_head):
 
 
     h_aus = np.sum(h_out)/ np.sum(m_out)  # average push out enthalpy
-    h_aus_s = fprop.sp(pZ[5], pZ[6],)[3]  # fl.zs_kg(['p','s'],[pZ[6],pZ[5]],['h'],fluid)[0]  # isentropic outlet enthalpy
+    h_aus_s = fprop.sp(pZ[5], pZ[6])[2]  # fl.zs_kg(['p','s'],[pZ[6],pZ[5]],['h'],fluid)[0]  # isentropic outlet enthalpy
     is_eff = (h_aus_s - pZ[4]) / (h_aus - pZ[4])  # isentropic efficiency
     return is_eff, degree_delivery
 
@@ -184,7 +183,7 @@ def state_th_Masse(y, Q, pV):
     '''
     ### mass and cv of thermal mass are in stationary state not crucial,
     ### parameter are chosen to achieve fast convergence without vibrations
-    m = .001  # kg
+    m = .0001  # kg
     cv = 502  # J/kg/K
     alp_a = 6.  # heat transfer coefficient to environment
     A = Ver0[3] * pV[8] / Ver0[2] * pV[0] / Ver0[0] * pV[1] / Ver0[
@@ -241,25 +240,21 @@ if __name__ == "__main__":
     mass_red = result.y[0].reshape(-1,2).mean(axis=1)
     inner_energy_red = result.y[1].reshape(-1, 2).mean(axis=1)
     temperature_red = result.y[2].reshape(-1, 2).mean(axis=1)
-    plt.figure(4)
-    plt.plot(time_red, mass_red)
-    plt.ylabel("m")
-    plt.figure(5)
-    plt.plot(time_red, inner_energy_red)
-    plt.ylabel("u")
-    plt.figure(6)
-    plt.plot(time_red, temperature_red)
-    plt.ylabel("T thermal")
-    plt.figure(7)
+    fig1, axs = plt.subplots(1,3)
+    axs[0].plot(time_red, inner_energy_red)
+    axs[0].set_ylabel("u")
+    axs[1].plot(time_red, mass_red)
+    axs[1].set_ylabel("m")
+    axs[2].plot(time_red, temperature_red)
+    axs[2].set_ylabel("T thermal")
+    fig2, axs = plt.subplots(1,3)
     x_values = np.linspace(0,count,count+1)
-    plt.plot(x_values, y_timetrack_m)
-    plt.title("Timetrack mass")
-    plt.figure(8)
-    plt.plot(x_values, y_timetrack_u)
-    plt.title("Timetrack inner energy")
-    plt.figure(9)
-    plt.plot(x_values, y_timetrack_t)
-    plt.title("timetrack Temperature")
+    axs[0].plot(x_values, y_timetrack_m)
+    axs[0].set_title("Timetrack mass")
+    axs[1].plot(x_values, y_timetrack_u)
+    axs[1].set_title("Timetrack inner energy")
+    axs[2].plot(x_values, y_timetrack_t)
+    axs[2].set_title("timetrack Temperature")
     print(result.message)
     #print(result.y)
     #plt.plot(np.linspace(0, 2* np.pi, resolution), result.y[1])
