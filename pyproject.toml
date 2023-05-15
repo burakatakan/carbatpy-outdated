@@ -28,10 +28,12 @@ keywords = ["thermal-energy-storage"," heat-exchanger",
 license = { text = "MIT"}
 dependencies = [
     "CoolProp",
+    "ctREFPROP",
     "numpy",
     "scipy",
     "matplotlib",
-    "pandas"
+    "pandas",
+    "yaml"
     ]
 
 packages=['carbatpy']

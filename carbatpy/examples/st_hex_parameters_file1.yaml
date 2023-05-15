@@ -1,0 +1,36 @@
+---
+# Shell and Tube Heat Exchanger Parameters (within carbatpy):
+# B. Atakan 06.05.2023
+!!python/object:heat_exchanger.st_heat_exchanger_input
+Tin:
+- 354
+- 290
+U: 500
+calc_type: const
+composition:
+- - 0.6
+  - 0.4
+- - 1.0
+d_in:
+- 0.01
+- 0.04330127018922193
+enthalpies:
+- 569035.5595409991
+- 71107.76784934009
+fluids:
+- Propane * Pentane
+- Water
+length: 4.0
+mass_flows:
+- 0.012
+- 0.0213
+name: HEX_0
+no_points: 100
+no_tubes: 12
+pressures:
+- 500000.0
+- 400000.0
+props: REFPROP
+units: 21
+
+...

@@ -11,7 +11,7 @@ Created on Thu Jan 31 17:46:25 2019
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm
+from fl_props_compressor import z_uv, z_ps, z_Tp, z_Tx, z_mm, z_px
 
 
 
@@ -237,9 +237,13 @@ def ProzessIter():
     pZyk[1] = 1.5e-5 * pV[0]**2. / Ver0[0]**2.
     # print(pZyk)
     zaehl=0
+    f, ax = plt.subplots(1,1)
 
     while 1:
         zaehl += 1
+        
+        if zaehl>1:
+            ax.plot(z_it[:, 0], z_it[:, 5], z_it[:, 12])
         for i in range(1, IS):
             if z_it[i,0] <= np.pi:
                 if z_it[i-1, 6] <= pZ[6]:
@@ -257,11 +261,12 @@ def ProzessIter():
                    - z_it[0, 6])**2.) + np.sqrt((np.average(z_it[-1, 12])
                    - np.average(z_it[0, 12]))**2.)
         # print(IS,zaehl)
+        print("Iteration:", zaehl, error, IS)
 
 
         if error < .01: #Zweistufig erst viele Rechnungen mit geringer Aufloesung (BA)
             if IS == IS0:
-                IS = 10 * IS0  # dann erhoehte Aufloesung
+                IS = 5 * IS0  # dann erhoehte Aufloesung
                 z0_ = z_it[:,:]
                 z_it = np.zeros([IS, 16])
                 z_it[:IS0,:] = z0_
@@ -326,7 +331,7 @@ def getETA(T_e, p_e, p_a, fluid_in, comp):
     return np.array((Isentr, Liefer))
 
 def geometrie():
-    global pV, pz, z_it, fluid, IS
+    global pV, pz, z_it, IS
     z_it[:, 0] = np.linspace(0., 2 * np.pi, IS)
     z_it[:, 1] = -(pV[1] / 2. * (1. -np.cos(z_it[:, 0]) + pV[2] * 
         (1.-np.sqrt(1. - (1. / pV[2] * np.sin(z_it[:,0]))**2.)))) + \
@@ -339,18 +344,25 @@ def geometrie():
 
 
 #Beispiel #################################################
-fluid = 'Propane * Butane'
+fluid = 'Propane * Hexane *Butane'
 comp = [1.0, 0.]
-pe = z_Tx(263, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
-pa =  z_Tx(355, 0, fluid, comp)[1] # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
+fluid = "Isobutane *Propane"  #"Dimethylether"  # "Butane"
+x0=.25
+x1 = 1-x0 
+comp = [x0, x1, 1-x0-x1]
+pe0 = z_Tx(273.15+17.2, 0, fluid, comp)[1]  # fl.zs_kg(['T','q'],[0.,0.],['p'],fluid)[0]
+pa0 =  z_Tx(53+273.15, 0, fluid, comp)[1] # fl.zs_kg(['T','q'],[35.,0.],['p'],fluid)[0]
+pe = pe0 #190.
+pa = 1885.  # 8 * pe
 
-
+T0 =z_px(pe,1, fluid, comp)[0]+20
+T0,pe, pa=(278., 178., 1050.0)
 fo = open("Daten.txtx","w")
 print("Drücke %2.2f kPa %2.2f kPa" % (pe, pa))
-dt_all=np.linspace(9.5,20.5,3)
+dt_all=np.array([0.15])
 out=[]
 for dt in dt_all:
-    o1 = getETA(dt + 273.15,pe,pa,fluid, comp)
+    o1 = getETA(dt + T0,pe,pa,fluid, comp)
     #o1.append((np.max(z_it[:,11]) - np.min(z_it[:,11]) * pV[7]))  # Massenstrom
     out.append(o1)
     print(dt, o1)

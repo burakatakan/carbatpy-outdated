@@ -10,14 +10,14 @@ Functions are also vectorized by hand (Name:"..._v). Physical exergies
 can be calculated for a state of known h and p.
 
 For REFPROP two usages of hp, Tp etc. are possible:
-    a) passing a string with the fluid name and compositon, properties etc. 
-    (This sometimes leads to trouble, when having many function calls >1E5 and
-     it is slower). 
-    For this the initially generated instance (RP) will be used throughout.
-    b) first calling setPRFluid with the fluid name string. This generates an 
-    instance of REFPROP for this fluid (mixture), which has to be passed to the 
-    calls of hp, Tp etc. together with an empty string as fluid name.
-    
+Passing a string with the fluid name and compositon, properties etc.
+(This sometimes leads to trouble, when having many function calls >1E5 and
+it is slower). selected instance (RP) will be used throughout.
+
+Or:First calling setPRFluid with the fluid name string. This generates an 
+instance of REFPROP for this fluid (mixture), which has to be passed to the 
+calls of hp, Tp etc. together with an empty string as fluid name.
+
 Standard units: SI (J, kg, Pa, K,...)
 
 """
@@ -31,6 +31,11 @@ from time import time
 
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
 _props = "REFPROP"  # or "CoolProp"
+_fl_properties_names = ("Temperature", "Pressure", "spec. Enthalpy",
+                        "spec. Volume","spec. Entropy", "quality", 
+                        "spec. heat capacity", 
+                        "viscosity", "thermal conductivity", 
+                        "Prandtl number","k.viscosity")
 # order for coolprop,alle_0:[_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]"
 if _props == "REFPROP":
     try:
@@ -181,7 +186,8 @@ def hp(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
         if option == 1:
             o = RP.REFPROP2dll(fluid, "HP", "T;D;S;QMASS",
                                units, 0, h, p, composition)
-            alle = [o.Output[0], p, h, 1/o.Output[1], *o.Output[2:4]]
+            
+            alle = [o.Output[0], p, h, 1./o.Output[1], *o.Output[2:4]]
 
     elif props == "CoolProp":
         fluid.update(CP.HmassP_INPUTS, h, p)

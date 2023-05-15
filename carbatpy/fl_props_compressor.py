@@ -34,8 +34,15 @@ def z_Tp(T, p_, fluid=fluid_, comp = comp_, props=_props):
     return np.array([T, p/1000., v, u/1000., h/1000., s])
 
 
-def z_Tx(T, x, fluid=fluid_, comp = comp_, props=fp._props):
-    T, p, h,v,s,q  = fp.T_prop_sat(T,  fluid, comp, props=props)[1]
+def z_Tx(T, x, fluid=fluid_, comp = comp_, props=_props):
+    T, p, h,v,s,q  = fp.prop_Tq(T, x, fluid, comp, props=props)
+    u = h - p * v
+    return np.array([T, p/1000., v, u/1000., h/1000., s])
+
+
+def z_px(p, x, fluid=fluid_, comp = comp_, props=_props):
+    p = p * 1000.
+    T, p, h,v,s,q  = fp.prop_pq(p, x, fluid, comp, props=props)
     u = h - p * v
     return np.array([T, p/1000., v, u/1000., h/1000., s])
 
