@@ -249,6 +249,7 @@ def uv(u, v, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
         if option == 1:
             o = RP.REFPROP2dll(fluid, "ED", "T;p;S;QMASS;H",
                                units, 0, u, 1/v, composition)
+            if o.ierr > 0: print(f"uv-error {o.ierr, o.herr, u, 1 / v, composition}")
             alle = [*o.Output[0:2],  o.Output[4], v,*o.Output[2:4]]
 
     elif props == "CoolProp":

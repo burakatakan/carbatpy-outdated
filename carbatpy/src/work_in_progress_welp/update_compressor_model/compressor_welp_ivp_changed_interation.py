@@ -58,7 +58,7 @@ def set_up(T_inlet, p_inlet, p_outlet, resolution):
     y_timetrack_u.append(y_start[1])
     y_timetrack_t.append(y_start[2])
     while err > 0.01:
-        res = solve_ivp(fun, [0, x_max], y_start, method='RK23', args=[pV, a_head, pZ, pZyk],max_step=1/(resolution)) #,max_step=1/(10*resolution)
+        res = solve_ivp(fun, [0, x_max], y_start, method='Radau', args=[pV, a_head, pZ, pZyk],max_step=1/(resolution), min_step=1e-5) #,max_step=1/(10*resolution)
         err = np.sqrt((res.y[0, -1] - y_start[0]) ** 2) + np.sqrt((res.y[1, -1] - y_start[1]) ** 2) + np.sqrt((res.y[2, -1] - y_start[2]) ** 2)
         pZyk[1] = help_variable
         # fig1, axs = plt.subplots(1, 3)
