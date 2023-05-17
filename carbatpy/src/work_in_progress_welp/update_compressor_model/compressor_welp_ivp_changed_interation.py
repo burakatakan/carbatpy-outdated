@@ -57,10 +57,18 @@ def set_up(T_inlet, p_inlet, p_outlet, resolution):
     y_timetrack_m.append(y_start[0])
     y_timetrack_u.append(y_start[1])
     y_timetrack_t.append(y_start[2])
-    while err > 0.5:
-        res = solve_ivp(fun, [0, x_max], y_start, method='RK23', args=[pV, a_head, pZ, pZyk], max_step=1/resolution)
+    while err > 0.01:
+        res = solve_ivp(fun, [0, x_max], y_start, method='RK23', args=[pV, a_head, pZ, pZyk], max_step=1/(10*resolution))
         err = np.sqrt((res.y[0, -1] - y_start[0]) ** 2) + np.sqrt((res.y[1, -1] - y_start[1]) ** 2) + np.sqrt((res.y[2, -1] - y_start[2]) ** 2)
         pZyk[1] = help_variable
+        # fig1, axs = plt.subplots(1, 3)
+        # axs[0].plot(res.t, res.y[1])
+        # axs[0].set_ylabel("u")
+        # axs[1].plot(res.t, res.y[0])
+        # axs[1].set_ylabel("m")
+        # axs[2].plot(res.t, res.y[2])
+        # axs[2].set_ylabel("T thermal")
+        # plt.show()
         if pZyk[1] == Aeff_o:
             (f"Aeffout not updatet, count = {count}")
         y_timetrack_m.append(res.y[0,-1])
@@ -99,7 +107,7 @@ def cal_efficiency_delivery(res, pV, pZ, pZyk, a_head):
     m_out = []
     h_out = []
     for i, t in enumerate(res.t):
-        [Ti, pi, hi, v, si, x] = fprop.uv(res.y[1, i], vi[i])  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
+        [Ti, pi, hi, v, si, qual] = fprop.uv(res.y[1, i], vi[i])  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
         ui = hi - pi * vi[i]
         if Ti == -9999990.:
             raise ValueError("invalid properties")
@@ -131,7 +139,7 @@ def fun(x, y, pV, a_head, pZ, pZyk):
     dxdtheta = -pV[1] / 2 * np.sin(theta) * (1 + 1/pV[2] * np.cos(theta) * (1 - (1/pV[2] * np.sin(theta))**2)**-0.5)
     dxdt = (2 * np.pi * pV[7]) * dxdtheta
     dVdt = a_head * dxdt
-    [Ti, pi, hi, v, si, x] = fprop.uv(y[1], vi)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
+    [Ti, pi, hi, v, si, qual] = fprop.uv(y[1], vi)  # fl.zs_kg(['u','v'],[ui,vi],['T','p','v','u','h','s'],fluid)
     ui = hi - pi * vi
     if Ti == -9999990.:
             raise ValueError("invalid properties")
@@ -162,6 +170,7 @@ def fun(x, y, pV, a_head, pZ, pZyk):
     dthermal_dt = state_th_Masse(y, -dQ, pV)
     dmdt = m_dot_in - m_dot_out
     dudt = (dQ + dW_fric + dW_rev - dmdt * ui - m_dot_out * hi + m_dot_in * pZ[4]) / y[0]  # kJ/kg
+
     return np.array([dmdt, dudt, dthermal_dt])
 
 def getalp(pV, step, dxdt, Ti, pi):
@@ -236,10 +245,10 @@ if __name__ == "__main__":
     result, count, y_timetrack_m, y_timetrack_u, y_timetrack_t, is_eff, degree_delivery = set_up(T_in, p_in, p_out, resolution)
     print(f"isentropic effciency: {is_eff}")
     print(f"degree of delivery: {degree_delivery}")
-    time_red = result.t.reshape(-1,2).mean(axis=1)
-    mass_red = result.y[0].reshape(-1,2).mean(axis=1)
-    inner_energy_red = result.y[1].reshape(-1, 2).mean(axis=1)
-    temperature_red = result.y[2].reshape(-1, 2).mean(axis=1)
+    time_red = result.t#.reshape(-1,2).mean(axis=1)
+    mass_red = result.y[0]#.reshape(-1,2).mean(axis=1)
+    inner_energy_red = result.y[1]#.reshape(-1, 2).mean(axis=1)
+    temperature_red = result.y[2]#.reshape(-1, 2).mean(axis=1)
     fig1, axs = plt.subplots(1,3)
     axs[0].plot(time_red, inner_energy_red)
     axs[0].set_ylabel("u")

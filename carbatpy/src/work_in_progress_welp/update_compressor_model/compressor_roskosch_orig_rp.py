@@ -258,6 +258,17 @@ def process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ):
             m_dichte = m_aus / t_aus / pZyk[1]  # mass flow density kg/s/m²
             # print("BA:",m_dichte,pV[0], error)
             pZyk[1] = 5.1109e-4 * (m_dichte) ** (-.486) * pV[0] ** 2. / Ver0[0] ** 2.  # Aeff_o neu
+            # fig1, axs = plt.subplots(1, 3)
+            # axs[0].plot(z_it[:, 0], z_it[:, 8])
+            # axs[0].set_xlabel("piston position")
+            # axs[0].set_ylabel("u")
+            # axs[1].plot(z_it[:, 0], z_it[:, 11])
+            # axs[1].set_xlabel("piston position")
+            # axs[1].set_ylabel("mass in zylinder")
+            # axs[2].plot(z_it[:, 0], z_it[:, 12])
+            # axs[2].set_xlabel("piston position")
+            # axs[2].set_ylabel("thermal mass")
+            # plt.show()
             z_it[0, 5:14] = z_it[-1, 5:14]  # End values of last cycle = Start values of next cycle
 
     # Efficiency evaluation
@@ -314,7 +325,7 @@ def getETA(T_e, p_e, p_a, fluid_in, comp, pV, pZ, z_it, IS, pZyk, IS0):
     z_it[0, 11] = z_it[0, 2] / z_it[0, 7]  # V/v, Cylinder completely filled with suction gas
     ##### start temperature thermal mass, only one temperature per cylce
     ##### Start value freely selectable, significantly influences iteration time
-    z_it[:, 12] = 42. + 273
+    z_it[:, 12] = 25. + 273
     is_eff, degree_delivery = process_iteration(fluid, pZyk, z_it, IS, IS0, comp, pV, pZ)
     return np.array((is_eff, degree_delivery))
 
