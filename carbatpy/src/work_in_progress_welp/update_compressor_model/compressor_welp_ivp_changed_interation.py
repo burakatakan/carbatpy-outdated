@@ -28,7 +28,7 @@ def set_up(T_inlet, p_inlet, p_outlet, resolution):
     u = h - p * v
     pZ = [T, p, v, u, h, s, p_outlet]
     # initializing pV vector
-    pV = [34e-3, 34e-3, 3.5, .04, .06071, 48.916, 50., 50. / 2., 2.]  # parameter see above
+    pV = [34e-3, 34e-3, 3.5, .04, .06071, 48916, 50., 50. / 2., 2.]  # parameter see above
     cycle_pos_var = np.linspace(0., 2 * np.pi, resolution)
     a_head = np.pi / 4. * pV[0] ** 2.  # area of cylinder head
 
@@ -48,7 +48,7 @@ def set_up(T_inlet, p_inlet, p_outlet, resolution):
     y_start = np.zeros(3)
     y_start[0] = Ver0[1] * a_head / pZ[2]       # mass in cylinder
     y_start[1] = pZ[3]                          # u in cylinder
-    y_start[2] = Tu                             # T of Thermal mass
+    y_start[2] = Tu                            # T of Thermal mass
     err = 10                                    # start value
     count = 0                                   # counts number of cycles until desired accuracy as achieved
     y_timetrack_m = []                          # tracks properties after every cycle
@@ -58,7 +58,7 @@ def set_up(T_inlet, p_inlet, p_outlet, resolution):
     y_timetrack_u.append(y_start[1])
     y_timetrack_t.append(y_start[2])
     while err > 0.01:
-        res = solve_ivp(fun, [0, x_max], y_start, method='RK23', args=[pV, a_head, pZ, pZyk], max_step=1/(10*resolution))
+        res = solve_ivp(fun, [0, x_max], y_start, method='RK23', args=[pV, a_head, pZ, pZyk],max_step=1/(resolution)) #,max_step=1/(10*resolution)
         err = np.sqrt((res.y[0, -1] - y_start[0]) ** 2) + np.sqrt((res.y[1, -1] - y_start[1]) ** 2) + np.sqrt((res.y[2, -1] - y_start[2]) ** 2)
         pZyk[1] = help_variable
         # fig1, axs = plt.subplots(1, 3)
@@ -119,8 +119,8 @@ def cal_efficiency_delivery(res, pV, pZ, pZyk, a_head):
             h_out.append(m_dot_out * 1/pV[7] / array_parts * hi)
             m_out.append(m_dot_out* 1/pV[7] / array_parts)
 
-
-    h_aus = np.sum(h_out)/ np.sum(m_out)  # average push out enthalpy
+    m_check = np.sum(m_out)
+    h_aus = np.sum(h_out)/ m_aus # average push out enthalpy
     h_aus_s = fprop.sp(pZ[5], pZ[6])[2]  # fl.zs_kg(['p','s'],[pZ[6],pZ[5]],['h'],fluid)[0]  # isentropic outlet enthalpy
     is_eff = (h_aus_s - pZ[4]) / (h_aus - pZ[4])  # isentropic efficiency
     return is_eff, degree_delivery
@@ -170,7 +170,8 @@ def fun(x, y, pV, a_head, pZ, pZyk):
     dthermal_dt = state_th_Masse(y, -dQ, pV)
     dmdt = m_dot_in - m_dot_out
     dudt = (dQ + dW_fric + dW_rev - dmdt * ui - m_dot_out * hi + m_dot_in * pZ[4]) / y[0]  # kJ/kg
-
+    if theta >= np.pi and pi <= pZ[1]:
+        buffer2 = 10
     return np.array([dmdt, dudt, dthermal_dt])
 
 def getalp(pV, step, dxdt, Ti, pi):
