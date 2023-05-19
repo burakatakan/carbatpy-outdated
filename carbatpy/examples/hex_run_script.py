@@ -12,7 +12,8 @@ Created on Sat May  6 10:02:19 2023
 @author: atakan 
 """
 
-import heat_exchanger as h_ex
+import components.heat_exchanger as h_ex
+from components.heat_exchanger import st_heat_exchanger_input
 import pandas as pd
 import os
 import shutil
@@ -44,7 +45,9 @@ f1, f2, ds, dq = hex2.he_state(res, 6, y_file_name+"calc")
 
 # also adding the input to the Excel file as a new sheet
 zzz = pd.DataFrame(dict((key, value) for (key, value) in neu.__dict__.items()))
-with pd.ExcelWriter(y_file_name+".xlsx", mode="a") as writer:
+mode ="w"
+if os.path.exists(y_file_name+".xlsx"): mode ="a"
+with pd.ExcelWriter(y_file_name+".xlsx", mode=mode) as writer:
     zzz.to_excel(writer, sheet_name="input")
 
 
@@ -58,13 +61,14 @@ now = datetime.now()
 dt_string = now.strftime("_%Y_%m_%d_%H_%M_%S")
 resDir = os.path.join(directory_path, resultsDir)
 
-
+len_fn =len(y_file_name0)
 dircont = os.listdir(directory_path)
 for file in dircont:
     allparts = file.split(".")
     if len(allparts) > 1:
         nbase, nend = allparts
-        if nbase == y_file_name0:
+        print(nbase,y_file_name0 )
+        if nbase[:len_fn] == y_file_name0:
             fname = nbase+dt_string+"."+nend
             resDir0 = os.path.join(resDir, fname)
             if nend == "yaml":

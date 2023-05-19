@@ -29,6 +29,7 @@ from time import time
 import yaml
 from fluid_properties_rp import _fl_properties_names
 import pandas as pd
+import os
 props = "REFPROP"
 
 
@@ -385,10 +386,19 @@ class counterflow_hex(heat_exchanger):
             pd0 = pd.DataFrame(alles.T, columns=names)
             # zzz = pd.DataFrame(dict( (key, value) for (key, value) in self.__dict__.items()))
             res0 = pd.DataFrame(res0, ["total"])
-            with pd.ExcelWriter(fname+".xlsx", mode="a") as writer:
-                pd0.to_excel(writer, sheet_name="results")
-                # zzz.to_excel(writer, sheet_name="input")
-                res0.to_excel(writer, sheet_name="overallRes")
+            mode ="w"
+            if os.path.exists(fname+".xlsx"): mode ="a"
+            
+            try:
+                with pd.ExcelWriter(fname+".xlsx", mode= mode) as writer:
+                    pd0.to_excel(writer, sheet_name="results")
+                    # zzz.to_excel(writer, sheet_name="input")
+                    res0.to_excel(writer, sheet_name="overallRes")
+            except:
+                with pd.ExcelWriter(fname+".xlsx", mode="w") as writer:
+                    pd0.to_excel(writer, sheet_name="results")
+                    # zzz.to_excel(writer, sheet_name="input")
+                    res0.to_excel(writer, sheet_name="overallRes")
 
             return states_0, states_1, ds, dh2
         else:
