@@ -405,7 +405,7 @@ def tp(temp, p,  fluid="", composition=[1.0], option=1, units=_units,
                            0, temp, p, composition)
         if o.ierr > 0:
             print(f"error in tp, {o.ierr, o.herr}")
-            print("alle in tp", alle, o)
+            print("alle in tp", temp, p,fluid,  o)
         if option == 0:
             alle = []
 
