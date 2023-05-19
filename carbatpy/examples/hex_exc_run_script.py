@@ -12,7 +12,7 @@ Created on Sat May  6 10:02:19 2023
 @author: atakan 
 """
 
-import heat_exchanger as h_ex
+import components.heat_exchanger as h_ex
 # import xl_read_heatexchanger_new as xlread
 import pandas as pd
 import os
