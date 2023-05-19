@@ -53,7 +53,7 @@ else:
 __Tenv__ = 283.15  # Temp. of the environment in K
 __penv__ = 1.013e5  # Pressure of the environment in Pa
 
-def setRPFluid(fluid, modwf = RP, name='RPPREFIX'):
+def setRPFluid(fluid, modwf = REFPROPFunctionLibrary, name='RPPREFIX'):
     """
     A new instnce of Refpropdll for the given fluid. It can then be called using fluid =""
 
@@ -600,13 +600,15 @@ def prop_pq(p, q, fluid="", composition=[1.0], option=1, units=_units,
 
     if props == "REFPROP":
         o = RP.REFPROP2dll(fluid, "PQ", "T;H;D;S", units, 0, p, q, composition)
-        if option == 0:
-            alle = []
-
-        elif option == 1:
-            alle = [o.Output[0], p, o.Output[1],
-                    1 / o.Output[2], o.Output[3], q]
-
+        if o.ierr ==0:
+            if option == 0:
+                alle = []
+    
+            elif option == 1:
+                alle = [o.Output[0], p, o.Output[1],
+                        1 / o.Output[2], o.Output[3], q]
+        else:
+            print(f"prop_pq-problem:{o.ierr, o.herr}")
     elif props == "CoolProp":
         fluid.update(CP.PQ_INPUTS, p, q)
         reihe = [CP.iT, CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
@@ -658,12 +660,16 @@ def prop_Tq(T, q, fluid="", composition=[1.0], option=1, units=_units,
 
     if props == "REFPROP":
         o = RP.REFPROP2dll(fluid, "TQ", "P;H;D;S", units, 0, T, q, composition)
-        if option == 0:
-            alle = []
-
-        elif option == 1:
-            alle = [T, o.Output[0], o.Output[1],
-                    1 / o.Output[2], o.Output[3], q]
+        if o.ierr ==0:
+            if option == 0:
+                alle = []
+                print("Option not implemented!")
+    
+            elif option == 1:
+                alle = [T, o.Output[0], o.Output[1],
+                        1 / o.Output[2], o.Output[3], q]
+        else:
+            print(f"propTq-problem:{o.ierr, o.herr}")
 
     elif props == "CoolProp":
         fluid.update(CP.TQ_INPUTS, T, q)
@@ -709,7 +715,7 @@ if __name__ == "__main__":
     elif _props == "REFPROP":
         # Fluid --------------------------------
         fluid_s = "Propane * Pentane"
-        wf = setRPFluid(fluid_s)
+        wf = setRPFluid(fluid_s,REFPROPFunctionLibrary)
         fluid_s =""
         comp = [.4, 0.6]
         #secondary_fluid = CP.AbstractState("TTSE&HEOS", fluid_s)
@@ -721,7 +727,7 @@ if __name__ == "__main__":
         
         # new Fluid:
         fluid_s = "Water"
-        wf = setRPFluid(fluid_s)  # new instance !
+        wf = setRPFluid(fluid_s, REFPROPFunctionLibrary)  # new instance !
         fluid_s =""
         t0 = time()
         alles = p_prop_sat(p_0, fluid_s, option=0, RP=wf)
