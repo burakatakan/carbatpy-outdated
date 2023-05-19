@@ -377,7 +377,11 @@ class counterflow_hex(heat_exchanger):
             alles[0, :] = result.x
             alles[1:nx+1] = states_0
             alles[nx+1:] = states_1
-            names = ("x", *_fl_properties_names[:6]*2)
+            names=["x"]  # unique  column-names:
+            for ext in["_fl1","_fl2"]: 
+                for m in _fl_properties_names[:6]: 
+                    names.append(m+ext)
+
             pd0 = pd.DataFrame(alles.T, columns=names)
             # zzz = pd.DataFrame(dict( (key, value) for (key, value) in self.__dict__.items()))
             res0 = pd.DataFrame(res0, ["total"])
@@ -710,11 +714,7 @@ class st_heat_exchanger_input:
                          Fluid2_Instance.composition_all],
                          Geometry_Instance.calc_type["value_1"],
                          Geometry_Instance.hex_name["value_1"],
-
-
-
                          Fluid1_Instance.units["value"]
-
                          ]
             hexin = st_heat_exchanger_input(*outputHex,)
             # all what is needed for heat_exchanger.counterflow_hex
