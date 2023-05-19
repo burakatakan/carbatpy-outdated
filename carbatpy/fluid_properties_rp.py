@@ -186,8 +186,8 @@ def hp(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
             o = RP.REFPROP2dll(
                 fluid, "HP", "T;D;S;QMASS;CP;VIS;TCX;PRANDTL;KV", units, 0, h, p, composition)
             alle = [o.Output[0], p, h, 1/o.Output[1], *o.Output[2:9]]
-            if alle[8] < 0:
-                print("error in hp, probably saturated")
+            if o.ierr > 0:
+                print(f"error in hp, {o.ierr, o.herr}")
                 print("alle in hp", alle, o)
         if option == 1:
             o = RP.REFPROP2dll(fluid, "HP", "T;D;S;QMASS",
@@ -251,8 +251,9 @@ def uv(u, v, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
             o = RP.REFPROP2dll(
                 fluid, "ED", "T;p;S;q;CP;VIS;TCX;PRANDTL;KV;H", units, 0, u, 1/v, composition)
             alle = [*o.Output[0:2], o.Output[9], v,o.Output[2], *o.Output[2:9]]
-            if alle[8] < 0:
-                print("error in uv, probably saturated")
+            if o.ierr > 0:
+                print(f"error in uv, {o.ierr, o.herr}")
+                print("alle in uv", alle, o)
         if option == 1:
             o = RP.REFPROP2dll(fluid, "ED", "T;p;S;QMASS;H",
                                units, 0, u, 1/v, composition)
@@ -311,6 +312,9 @@ def sp(s, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
     """
     if props == "REFPROP":
         o = RP.REFPROP2dll(fluid, "SP", "T;D;H;QMASS", units, 0, s, p, composition)
+        if o.ierr > 0:
+            print(f"error in sp, {o.ierr, o.herr}")
+            print("alle in sp",  o)
         if option == 0:
             alle = []
         if option == 1:
@@ -399,7 +403,9 @@ def tp(temp, p,  fluid="", composition=[1.0], option=1, units=_units,
     if props == "REFPROP":
         o = RP.REFPROP2dll(fluid, "TP", "H;D;S;QMASS", units,
                            0, temp, p, composition)
-        # print("tp:", composition, fluid, temp, p, o.Output[0:5])
+        if o.ierr > 0:
+            print(f"error in tp, {o.ierr, o.herr}")
+            print("alle in tp", alle, o)
         if option == 0:
             alle = []
 
@@ -466,6 +472,10 @@ def p_prop_sat(p,  fluid="", composition=[1.0], option=1, units=_units,
             if option == 0:
                 o = RP.REFPROP2dll(
                     fluid, "PQ", "T;H;D;S;CP;VIS;TCX;PRANDTL;KV", units, 0, p, qq, composition)
+                if o.ierr > 0:
+                    print(f"error in p_prop_sat, {o.ierr, o.herr}")
+                    print("alle in p_prop_sat", alle, o)
+                    
                 alle = [o.Output[0], p, o.Output[1], 1 /
                         o.Output[2], o.Output[3], qq, *o.Output[4:9]]
 
@@ -541,6 +551,9 @@ def T_prop_sat(temp,  fluid="", composition=[1.0], option=1, units=_units,
                                    units, 0, temp, qq, composition)
                 alle = [temp, o.Output[0],  o.Output[1],
                         1 / o.Output[2], o.Output[3], qq]
+            if o.ierr > 0:
+                print(f"error in T_prop_sat, {o.ierr, o.herr}")
+                print("alle in T_prop_sat", alle, o)
 
         elif props == "CoolProp":
             fluid.update(CP.QT,  qq, temp)
@@ -607,6 +620,7 @@ def prop_pq(p, q, fluid="", composition=[1.0], option=1, units=_units,
             elif option == 1:
                 alle = [o.Output[0], p, o.Output[1],
                         1 / o.Output[2], o.Output[3], q]
+            
         else:
             print(f"prop_pq-problem:{o.ierr, o.herr}")
     elif props == "CoolProp":
