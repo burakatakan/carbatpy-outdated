@@ -21,7 +21,8 @@ props = "REFPROP"
 class static_heat_exchanger:
     def __init__(self, fluids, temps, ps, qs=[0, -2], points=30, dT_hex=0.5,
                  dT_superh=10, heating =True, props="REFPROP",
-                 compositions=[[1.0], [1.0]], calc_type="const", name="HEX_0",
+                 compositions=[[1.0], [1.0]], calc_type="const", 
+                 name="evaporator",
                  units=21):  # qs def.: <0=> liquid entering, qs >1 => vapor entering
 
         
@@ -58,8 +59,10 @@ class static_heat_exchanger:
                             self.fluids[0], self.compositions[0],
                             props=self.props, units=self.units,
                             RP=self.RP[0])
+        if self.qs[0]<0 or self.qs[0]>1: 
+            raise Exception(f"working fluid quality is wrong!{self.qs}!")
 
-        sat_l = flp.prop_pq(ps[0], 0.,
+        sat_l = flp.prop_pq(ps[0], self.qs[0],
                             self.fluids[0], self.compositions[0],
                             props=self.props, units=self.units,
                             RP=self.RP[0])
@@ -119,9 +122,10 @@ if __name__ == "__main__":
     # fl = fl_names
     flx = [fl1, fl2]
     ps = [1.92e5,  12e5]
+    qs =[-0.5,-2]
 
     hp0 = static_heat_exchanger(
-        flx, Ts, ps, dT_superh=15, compositions=compositions)
+        flx, Ts, ps, dT_superh=15, qs=qs, compositions=compositions)
     hp0.pinchpoint()
     
     plt.figure()
