@@ -19,15 +19,97 @@ props = "REFPROP"
 
 
 class static_heat_exchanger:
-    def __init__(self, fluids, temps, ps, qs=[0, -2], points=30, dT_hex=0.5,
+    """
+    Class for static heat exchanger
+    
+    means: no time dependence and not heat transfer coefficients * areas
+    are used!
+    Only first law and second law will be checked (the latter must be improved)
+    
+    """
+    
+    
+    def __init__(self, fluids, temps, ps, qs=[0, -2], h_enter =[-1e9, -1e9], 
+                 points=30, dT_hex=0.5,
                  dT_superh=10, heating=True, dH_min=0, props="REFPROP",
                  compositions=[[1.0], [1.0]], calc_type="const",
                  name="evaporator",
-                 units=21):  # qs def.: <0=> liquid entering, qs >1 => vapor entering
+                 units=21):  
+        """
+        Initialization of the class static heat exchanger
+        
+        Will be used for two fluids flowing in counterflow, at the moment
+        assuming that the high temperature fluid in the evaporator and the low-
+        temperature fluid in the condenser do not go through phase changes. 
+        The naming (condenser/evaporator) below, assumes a heat pump. If it is 
+        used for a power cycle, one has to invert the naming. The enthalpies
+        and their difference is always specific for the working fluid
+        (first fluid) for the second fluid, the mass ratio is calculated.
+
+        Parameters
+        ----------
+        fluids : list of two strings
+            Fluid names according to Refprop each.
+        temps : list of two floats
+           two temperatures (K), the first is always used as the highest T of the
+           working fluid, the second can be used as the lowest T of the secondary
+           (or storage) fluid.
+        ps : list of two floats
+            The prescribed pressures(Pa) of the two fluids, for the evaporator
+            the first pressure can be varied by the program.
+        qs : list of two floats, optional
+            The quality of the two fluids, for pure liquid negative,
+            for pure vapor larger 1. The default is [0, -2].
+        h_enter : list of two floats, optional
+            if the values are not -1e-9, the value is used as the entering 
+            enthalpy for the evaporator. The default is [-1e-9, -1e-9].
+        points : integer, optional
+            number of state points to evaluate the states of both fluids.
+            The default is 30.
+        dT_hex : float, optional
+            the minimum temperature difference between the two fluids, which
+            is allowed for any point. The default is 0.5.
+        dT_superh : float, optional
+            superheating of the working fluid. The default is 10.
+        heating : boolean, optional
+            if True, we heat the working fluid (evaporator), if False, we cool 
+            it(condenser. The default is True.
+        dH_min : float, optional
+            minimum specific enthalpy change of the working fluid. May be 
+            prescribed by other parts of the cycle (e.g.:evaporator + compressor) 
+            if it is set to zero, the enthalpy difference results from the 
+            given T/p-states of the secondary fluid. The default is 0.
+        props : string, optional
+            either REFPROP or CoolProp (what shall be used?) Refprop is safe at
+            the moment. The fluid naming conventions also depond on the choice.
+            The default is "REFPROP".
+        compositions : list of list of floats, optional
+            the composition (mole fractions) of each of the two fluids, if they 
+            are mixtures. Otherwise both: 1.0. The default is [[1.0], [1.0]].
+        calc_type : string, optional
+            at the moment unused, may be later used for different variations. 
+            The default is "const".
+        name : string, optional
+            name of the heat exchanger, helps distinguishing when coupled to a 
+            cycle. Could be that "evaporator" and "condenser" may get a meaning 
+            ater.
+            The default is "evaporator".
+        units : integer, optional
+            indication of the unit system of evrything in REFPROP. 21 means
+            that SI (kg, J, s, W, Pa, etc.) is used throughout, The default is 21.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        # qs def.: <0=> liquid entering, qs >1 => vapor entering
 
         self.temps = temps
         self.ps = ps
         self.qs = qs
+        self.h_enter = h_enter
         self.points = points
         self.dT_hex = dT_hex
         self.dT_superh = dT_superh
@@ -41,6 +123,41 @@ class static_heat_exchanger:
         self.fluids = fluids
 
     def pinchpoint(self, verbose=False):
+        """
+        Calculate the state of a static heat exchanger
+        
+        only from thermodynamics. If it is an evaporator, the pressure may be 
+        varied, such that the exiting working fluid is really at the wanted 
+        superheated state. The quality of the entering working fluid can be 
+        prescribed. For the heat-pump evaporator it may be better to set the 
+        enthalpy of the entering working fluid. Finally the values of the 
+        static_heat_exchanger instance are set.
+
+        Parameters
+        ----------
+        verbose : TYPE, optional
+            DESCRIPTION. The default is False.
+
+        Raises
+        ------
+        Exception
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+        But following values are set:
+        self.enthalpies : list of two arrays
+            all specific enthlpies of the two fluids for the set number of points
+        self.m_ratio: float
+            The ratio of the mass flow between the two fluids
+        self.dh : list of two floats
+            the specific enthalpy chnages of the two fluids.
+        self.t_all: list of two arrays
+            with all specific values (T, p, h, v, s, q) of both fluids along 
+            the set number of points
+
+        """
 
         from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary as modwf
 
@@ -63,11 +180,18 @@ class static_heat_exchanger:
                                 RP=self.RP[0])
             if self.qs[0] < 0 or self.qs[0] > 1:
                 raise Exception(f"working fluid quality is wrong!{self.qs}!")
-
-            sat_l = flp.prop_pq(self.ps[0], self.qs[0],
-                                self.fluids[0], self.compositions[0],
-                                props=self.props, units=self.units,
-                                RP=self.RP[0])
+            if self.h_enter[0] < -1e-8:  # quality will be used
+    
+                sat_l = flp.prop_pq(self.ps[0], self.qs[0],
+                                    self.fluids[0], self.compositions[0],
+                                    props=self.props, units=self.units,
+                                    RP=self.RP[0])
+            else: # enthalpy of the entering working fluid given.
+                sat_l = flp.hp(self.h_enter[0], self.ps[0],
+                                    self.fluids[0], self.compositions[0],
+                                    props=self.props, units=self.units,
+                                    RP=self.RP[0])
+                
 
             ev_out = flp.tp(sat_v[0]+self.dT_superh, self.ps[0],
                             self.fluids[0], self.compositions[0],
@@ -187,11 +311,14 @@ if __name__ == "__main__":
     fl1 = "Propane*Pentane*Butane"
     fl2 = "Methanol"
     compositions = [[.3, .4, .3], [1.]]
+    
+    # Evaporator with given quality
     Ts = [290., 250.]
     # fl = fl_names
     flx = [fl1, fl2]
     ps = [1.92e5,  12e5]
     qs = [0.05, -2]
+    # Evaporator
 
     hp0 = static_heat_exchanger(
         flx, Ts, ps, dT_superh=15, qs=qs, compositions=compositions)
@@ -203,6 +330,21 @@ if __name__ == "__main__":
     plt.plot(hp0.t_all[0][2, :] - hp0.t_all[0][2, 0], hp0.t_all[0][0, :])
     plt.plot((hp0.t_all[1][2, :] - hp0.t_all[1][2, 0]) /
              hp0.m_ratio, hp0.t_all[1][0, :], "o")
+    
+    # Evporator with given enthalpy (nearly the same calculation, start later)
+    h_0 = [hp0.enthalpies[0][3], -1e9]
+    hp0 = static_heat_exchanger(
+        flx, Ts, ps, dT_superh=15, qs=qs, h_enter=h_0,  compositions=compositions)
+    hp0.pinchpoint()
+
+    # plt.figure()
+    shift1 = hp0.t_all[0][2, -1] - hp0.t_all[0][2, 0]
+    
+    plt.plot(hp0.t_all[0][2, :] - hp0.t_all[0][2, 0], hp0.t_all[0][0, :], "k")
+    plt.plot((hp0.t_all[1][2, :] - hp0.t_all[1][2, 0]) /
+             hp0.m_ratio, hp0.t_all[1][0, :], "x")
+    
+    # Condenser with given enthalpy difference
     Ts = [350., 290.]
     ps = [8.92e5,  12e5]
     fl2 = "Water"
