@@ -314,7 +314,7 @@ def sp(s, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
         o = RP.REFPROP2dll(fluid, "SP", "T;D;H;QMASS", units, 0, s, p, composition)
         if o.ierr > 0:
             print(f"error in sp, {o.ierr, o.herr}")
-            print("alle in sp",  o)
+            #print("alle in sp",  o)
         if option == 0:
             alle = []
         if option == 1:
@@ -736,6 +736,8 @@ if __name__ == "__main__":
         # interesting, when using "BICUBIC&HEOS" the exergy of the ambient state is 0.15!
         t0 = time()
         state_data = tp(temp_0_s, p_sur, fluid_s, composition=comp,RP=wf)
+        st2 =sp(state_data[4],p_sur,fluid_s,composition=comp,RP=wf)
+        print("sp", st2)
         print(state_data, time()-t0)
         print(hp(state_data[2], p_sur, fluid_s, composition=comp, RP=wf))
         
