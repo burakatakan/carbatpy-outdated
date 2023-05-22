@@ -16,8 +16,8 @@ import components.throttle_simple as throt
 import components.heat_exchanger_thermo as hext
 
 
-working_fluid = "Propane * Butane * Hexane"
-x1 =0.5
+working_fluid = "Propane * Butane * Pentane"
+x1 =0.2
 x2 = 0.4
 x3 =1-x1-x2
 composition_wf =[x1,x2,x3]
@@ -54,7 +54,7 @@ qs = [2, -2]
 compositions=[composition_wf,[1.]]
 
 hp_condenser = hext.static_heat_exchanger(
-    flx, Ts, ps, dT_hex=5, h_enter=[state_c_out[2], -1e-9], dT_superh=dT_sup, 
+    flx, Ts, ps, dT_hex=1, h_enter=[state_c_out[2], -1e-9], dT_superh=dT_sup, 
     qs=qs,heating =False, dH_min=dh_condenser,
     compositions=compositions)
 hp_condenser.pinchpoint()
