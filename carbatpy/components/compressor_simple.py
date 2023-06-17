@@ -13,67 +13,17 @@ Created on Sun May 21 08:51:33 2023
 
 import CoolProp.CoolProp as CP
 
-import fluid_properties_rp as fprop
+import fluid_props as fprop
 import numpy as np
 
 
-def compressor(state_in, p_out, eta_c, working_fluid, props="REFPROP",
-               composition=[1.0], calc_type="const_eta",
-               name="compressor",
-               units=21, WF=fprop.RP):
+def compressor(p_out, eta_s, fluid, calc_type="const_eta",
+               name="compressor"):
     """
-    compressor output state calculation
-    
-    so far only for a constant isentropic efficiency
+    compressor or expander output state calculation
 
-    Parameters
-    ----------
-    state_in : array of float
-        state containing [T,p,h,v,s,q].
-    p_out : float
-        output pressure.
-    eta_c : float
-        isentropic efficiency.
-    working_fluid : string
-        fluid (mixture according to Refprop.
-    props : string, optional
-        property model. The default is "REFPROP".
-    composition : array of floats, optional
-        mle fractions of each component. The default is [1.0].
-    calc_type : string, optional
-        how to calculate, so far, only one implemented. The default is "const_eta".
-    name : string, optional
-        name of the device. The default is "compressor".
-    units : integer, optional
-        to select SI (here or REFPROP). The default is 21.
-    WF : instnce of refprop, optional
-        DESCRIPTION. The default is fprop.RP.
-
-    Returns
-    -------
-    state_out : array of float
-        compressor output state containing [T,p,h,v,s,q].
-
-    """
-    if calc_type == "const_eta":
-        prop_input = [working_fluid, composition , 1, units, props, WF]
-        state_out_isentropic = fprop.sp( state_in[4], p_out, *prop_input)  
-        enthalpy_change_real = (state_out_isentropic[2] - state_in[2]) / eta_c
-        state_out = fprop.hp(state_out_isentropic[2] + enthalpy_change_real,
-                             p_out, *prop_input)
-    else:
-        raise Exception(f"The option{calc_type} is not yet implemented for compressors")
-    return state_out
-
-
-def expander(state_in, p_out, eta_s, working_fluid, props="REFPROP",
-               composition=[1.0], calc_type="const_eta",
-               name="compressor",
-               units=21, WF=fprop.RP):
-    """
-    expander output state calculation
-    
-    so far only for a constant isentropic efficiency
+    so far only for a constant isentropic efficiency, according to the pressure
+    change an expansion or compression is detected and handled.
 
     Parameters
     ----------
@@ -83,20 +33,12 @@ def expander(state_in, p_out, eta_s, working_fluid, props="REFPROP",
         output pressure.
     eta_s : float
         isentropic efficiency.
-    working_fluid : string
-        fluid (mixture according to Refprop.
-    props : string, optional
-        property model. The default is "REFPROP".
-    composition : array of floats, optional
-        mle fractions of each component. The default is [1.0].
+    fluid : fprop.Fluid
+        entering fluid, including properties, composition, and model.
     calc_type : string, optional
         how to calculate, so far, only one implemented. The default is "const_eta".
     name : string, optional
         name of the device. The default is "compressor".
-    units : integer, optional
-        to select SI (here or REFPROP). The default is 21.
-    WF : instnce of refprop, optional
-        DESCRIPTION. The default is fprop.RP.
 
     Returns
     -------
@@ -104,27 +46,44 @@ def expander(state_in, p_out, eta_s, working_fluid, props="REFPROP",
         compressor output state containing [T,p,h,v,s,q].
 
     """
+    expander = False
+    if fluid.properties.pressure > p_out:
+        expander = True
+
     if calc_type == "const_eta":
-        prop_input = [working_fluid, composition , 1, units, props, WF]
-        state_out_isentropic = fprop.sp( state_in[4], p_out, *prop_input)  
-        enthalpy_change_real = (state_out_isentropic[2] - state_in[2]) * eta_s
-        state_out = fprop.hp(state_out_isentropic[2] + enthalpy_change_real,
-                             p_out, *prop_input)
+        h_in = fluid.properties.enthalpy
+
+        state_out_isentropic = fluid.set_state(
+            [fluid.properties.entropy, p_out], "SP")
+
+        diff_enthalpy_s = fluid.properties.enthalpy-h_in
+
+        if expander:
+            diff_enthalpy = diff_enthalpy_s * eta_s
+        else:
+            diff_enthalpy = diff_enthalpy_s / eta_s
+
+        state_out = fluid.set_state([h_in + diff_enthalpy, p_out], "HP")
     else:
-        raise Exception(f"The option{calc_type} is not yet implemented for compressors")
+        raise Exception(
+            f"The option{calc_type} is not yet implemented for compressors")
     return state_out
 
-if __name__ == "__main__":
-    
 
-    fluid = "Propane * Butane"
-    composition =[0.8,0.2]
-    #wf = fprop.setRPFluid(fluid, fprop.REFPROPFunctionLibrary)
-    p_in = 1e5
-    T_in = 300.
+if __name__ == "__main__":
+
+    FLUID = "Propane * Pentane"
+    comp = [.80, 0.2]
+    flm = fprop.FluidModel(FLUID)
+    myFluid = fprop.Fluid(flm, comp)
+    p_low = 1e5
+    state_in = myFluid.set_state([310., p_low], "TP")
     p_out = 10e5
-    eta_c = .65
-    state_in = fprop.tp(T_in, p_in, fluid, composition)
-    state_ina = fprop.sp(state_in[4], p_out, fluid, composition)
-    state_out = compressor(state_in, p_out, eta_c, fluid, composition=composition)
-    print(state_in,"\n", state_out,"\n", state_out-state_in)
+    eta_s = .7
+
+    state_out = compressor(p_out, eta_s, myFluid)
+    print(myFluid.properties.temperature)
+    print("\nCompressor", state_in, "\n", state_out, "\n", state_out-state_in)
+    state_in = state_out
+    state_out = compressor(p_low, eta_s, myFluid)
+    print("\nExpander:", state_in, "\n", state_out, "\n", state_out-state_in)
