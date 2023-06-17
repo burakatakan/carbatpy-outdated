@@ -8,14 +8,12 @@ Created on Sun May 21 08:51:33 2023
 
 import CoolProp.CoolProp as CP
 
-import fluid_properties_rp as fprop
+import fluid_props as fprop
 import numpy as np
 
 
-def throttle(state_in, p_out, working_fluid, props="REFPROP",
-               composition=[1.0], calc_type="const_h",
-               name="compressor",
-               units=21, WF=fprop.RP):
+def throttle(state_in, p_out, fluid, calc_type="const_h",
+               name="throttle"):
     """
     throttle output state calculation
     
@@ -49,26 +47,21 @@ def throttle(state_in, p_out, working_fluid, props="REFPROP",
 
     """
     if calc_type == "const_h":
-        prop_input = [working_fluid, composition , 1, units, props, WF]
-        
-        state_out = fprop.hp(state_in[2] ,
-                             p_out, *prop_input)
+        state_out = fluid.set_state([fluid.properties.enthalpy, p_out],"HP")
     else:
         raise Exception(f"The option{calc_type} is not yet implemented for compressors")
     return state_out
 
 
 if __name__ == "__main__":
+    FLUID = "Propane * Pentane"
+    comp = [.50, 0.5]
+    flm = fprop.FluidModel(FLUID)
+    myFluid = fprop.Fluid(flm, comp)
+    state_in = myFluid.set_state([320., 19e5], "TP")
+
+    p_out = 5e5
     
 
-    fluid = "Propane * Butane"
-    composition =[0.8,0.2]
-    #wf = fprop.setRPFluid(fluid, fprop.REFPROPFunctionLibrary)
-    p_in = 19e5
-    T_in = 300.
-    p_out = 10e5
-    
-    state_in = fprop.tp(T_in, p_in, fluid,composition)
-    state_ina = fprop.sp(state_in[4], p_out, fluid,composition)
-    state_out = throttle(state_in, p_out, fluid, composition=composition)
-    print(state_in,"\n", state_out,"\n", state_out-state_in)
+    state_out = throttle(state_in, p_out, myFluid)
+    print("Throttle:\nInput:", state_in,"\nOutput:", state_out,"\nDifference", state_out-state_in)

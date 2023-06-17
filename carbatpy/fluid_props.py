@@ -128,7 +128,7 @@ class Fluid:
         else:
             raise Exception(
                 f"Property model {self.fluidmodel.props} not implemented yet!")
-        return self.properties.state
+        return np.array([*self.properties.state])
 
     def set_state_v(self, values, given="TP", wanted=_THERMO_STRING):
         dimension = np.shape(values)
