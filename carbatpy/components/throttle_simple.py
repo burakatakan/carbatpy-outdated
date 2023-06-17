@@ -12,7 +12,7 @@ import fluid_props as fprop
 import numpy as np
 
 
-def throttle(state_in, p_out, fluid, calc_type="const_h",
+def throttle(p_out, fluid, calc_type="const_h",
                name="throttle"):
     """
     throttle output state calculation
@@ -21,24 +21,14 @@ def throttle(state_in, p_out, fluid, calc_type="const_h",
 
     Parameters
     ----------
-    state_in : array of float
-        state containing [T,p,h,v,s,q].
     p_out : float
         output pressure.
-    working_fluid : string
-        fluid (mixture according to Refprop.
-    props : string, optional
-        property model. The default is "REFPROP".
-    composition : array of floats, optional
-        mle fractions of each component. The default is [1.0].
+    fluid : fprop.Fluid
+        entering fluid, including properties, composition, and model.
     calc_type : string, optional
         how to calculate, so far, only one implemented. The default is "const_h".
     name : string, optional
-        name of the device. The default is "compressor".
-    units : integer, optional
-        to select SI (here or REFPROP). The default is 21.
-    WF : instnce of refprop, optional
-        DESCRIPTION. The default is fprop.RP.
+        name of the device. The default is "throttle".
 
     Returns
     -------
@@ -49,7 +39,7 @@ def throttle(state_in, p_out, fluid, calc_type="const_h",
     if calc_type == "const_h":
         state_out = fluid.set_state([fluid.properties.enthalpy, p_out],"HP")
     else:
-        raise Exception(f"The option{calc_type} is not yet implemented for compressors")
+        raise Exception(f"The option{calc_type} is not yet implemented for throttles")
     return state_out
 
 
@@ -63,5 +53,5 @@ if __name__ == "__main__":
     p_out = 5e5
     
 
-    state_out = throttle(state_in, p_out, myFluid)
+    state_out = throttle(p_out, myFluid)
     print("Throttle:\nInput:", state_in,"\nOutput:", state_out,"\nDifference", state_out-state_in)

@@ -27,8 +27,7 @@ def compressor(p_out, eta_s, fluid, calc_type="const_eta",
 
     Parameters
     ----------
-    state_in : array of float
-        state containing [T,p,h,v,s,q].
+    
     p_out : float
         output pressure.
     eta_s : float
