@@ -43,10 +43,8 @@ class static_heat_exchanger:
     
     def __init__(self, fluids, temps, ps, qs=[0, -2], h_enter =[-1e9, -1e9], 
                  points=30, dT_hex=0.5,
-                 dT_superh=10, heating=True, dH_min=0, props="REFPROP",
-                 compositions=[[1.0], [1.0]], calc_type="const",
-                 name="evaporator",
-                 units=21):  
+                 dT_superh=10, heating=True, dH_min=0, calc_type="const",
+                 name="evaporator"):  
         """
         Initialization of the class static heat exchanger
         
@@ -128,9 +126,6 @@ class static_heat_exchanger:
         self.dT_superh = dT_superh
         self.heating = heating
         self.dH_min = dH_min
-        self.compositions = compositions
-        self.props = props
-        self.units = units
         self.calc_type = calc_type
         self.name = name
         self.fluids = fluids
@@ -357,7 +352,7 @@ if __name__ == "__main__":
     # Evaporator
 
     hp0 = static_heat_exchanger(
-        flx, Ts, ps, dT_superh=15, qs=qs, compositions=compositions)
+        flx, Ts, ps, dT_superh=15, qs=qs)
     hp0.pinchpoint()
 
     plt.figure()
