@@ -197,12 +197,17 @@ class static_heat_exchanger:
             start = 1.05
         else:
             start = .95
-        result = root(self.pinch_root, start)
-        if result.success:
-            return result.x
-        else:
-            print("root-finding problem!", result)
-            return result.x
+        try: 
+            result = root(self.pinch_root, start)
+        
+            if result.success:
+                return result.x
+            else:
+                print("root-finding problem!", result)
+                return result.x
+        except: 
+            result = np.array([1e4])
+            return result
 
 
     def pinch_plot(self, factor):
