@@ -129,9 +129,12 @@ class static_heat_exchanger:
         self. h_in_out[1, 1] = dh_s = (
             s_out.properties.enthalpy - s_in.properties.enthalpy) * condenser
         self.m_dot_s = self.dQ / dh_s  # fixed heat flow, determines mass flow rate
+        
+        
         outw = w_out.set_state([s_in.properties.temperature + 
                                 self.dT_separation_min * condenser,
                                 w_in.properties.pressure], "TP")
+        print(outw, w_in.properties.temperature, w_out.properties.temperature)
         self. h_in_out[0, 0] = w_out.properties.enthalpy
         
         self. h_in_out[0, 1] = dh_w = (w_in.properties.enthalpy - w_out.properties.enthalpy) / \
@@ -186,7 +189,7 @@ class static_heat_exchanger:
         if self.heating:
             return dTs.min() - self.dT_separation_min
         else:
-            return (dTs.max() + self.dT_separation_min)
+            return (dTs.max() - self.dT_separation_min)
 
     def find_pinch(self):
         if self.heating:
@@ -224,41 +227,51 @@ if __name__ == "__main__":
     secFlm = fprop.FluidModel(FLS)
     secFluid = fprop.Fluid(secFlm, [1.])
     
-    # Condeneser
-    T_in = 370.
-    state_in = myFluid.set_state([T_in, 1.], "TQ")
-    dT_super = 5.
-    dT_min = 2.0
-    state_in = myFluid.set_state([myFluid.properties.pressure,
-                                  myFluid.properties.temperature + dT_super], "PT")
+    # Condenser, secondary fluid fixes all:
     sT_in = 300.0
+    sT_out = 370.0
     sp_in = 2e5
     dH_min = 1e3
-    sT_out = T_in - dT_super - dT_min
     
     state_sec_in = secFluid.set_state([sT_in, sp_in], "TP")
+    # working fluid
+    dT_super = 5.
+    T_dew = sT_out
+    state_in = myFluid.set_state([T_dew, 1.], "TQ") # find minimum pressure
+    
+    
+    T_in = T_dew + dT_super 
+    state_in = myFluid.set_state([myFluid.properties.pressure,
+                                  myFluid.properties.temperature + dT_super], "PT")
+    dT_min = 2.0
+    
     hex0 = static_heat_exchanger([myFluid, secFluid], dH_min, sT_out, 
                                  dT_separation_min=dT_min)
     mw, dTall, w, s = hex0.pinch_calc(160)
-    factor = hex0.find_pinch()
-    mw, dTall0, w, s = hex0.pinch_plot(factor)
+    factor0 = hex0.find_pinch()
+    mw0, dTall0, w0, s0 = hex0.pinch_plot(factor0)
     
     # Evaporator:
-    T_in = 280.
-    state_in = myFluid.set_state([T_in, .1], "TQ")
-    
+        
     
     sT_in = 300.0
+    sT_out = 276
     sp_in = 2e5
     dH_min = 1e3
-    sT_out = T_in + dT_min
     
     state_sec_in = secFluid.set_state([sT_in, sp_in], "TP")
+    dT_min = 2.0
+    T_in = sT_out - dT_min
+    state_in = myFluid.set_state([T_in, .1], "TQ")
+    print("state in", state_in)
+    
+    
+    
     hex0 = static_heat_exchanger([myFluid, secFluid], dH_min, sT_out, 
                                  dT_separation_min=dT_min)
     mw, dTall, w, s = hex0.pinch_calc(1)
     factor = hex0.find_pinch()
-    mw, dTall, w, s = hex0.pinch_plot(1.5)
+    mw, dTall, w, s = hex0.pinch_plot(1)
 
     p_out = 5e5
 
