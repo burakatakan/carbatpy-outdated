@@ -6,7 +6,6 @@ Created on Sun May 21 08:51:33 2023
 """
 
 
-import CoolProp.CoolProp as CP
 import copy
 import fluid_props as fprop
 import numpy as np
@@ -25,15 +24,15 @@ class static_heat_exchanger:
     """
 
     def __init__(self, fluids, dH_min, T_out_s,
-                 points=30, dT_separation_min=0.5, calc_type="const",
+                 points=50, dT_separation_min=0.5, calc_type="const",
                  name="evaporator"):
         """
         class to calculate (static/steady state) heat-exchangers
-        
+
         includes pinch-point analysis and plotting, 
         only implemented for simple thermodynamic calculations 
         (no convection coefficients and heat exchanger areas regarded yet)
-        
+
         Parameters
         ----------
         fluids : list of 2 fprop.Fluid
@@ -68,19 +67,17 @@ class static_heat_exchanger:
         self. dT_separation_min = dT_separation_min
         self.heating = False
         if T_out_s > fluids[1].properties.temperature:
-            self.heating = True # condenser
+            self.heating = True  # condenser
         self.calc_type = calc_type
         self.name = name
         self.all_states = np.zeros((points, len(fprop._THERMO_STRING)))
         self.h_in_out = np.zeros((2, 4))
-        
-        
-        
+
     def pinch_calc(self, m_dot_w_factor=1):
         """
-        Calculate the changes in tnthalpy and temperature along the heat exchanger
-        
-        counter-flow hex assumed! 
+        Calculate the changes in enthalpy and temperature along the heat exchanger
+
+        counter-flow hex assumed! Both flows are isobaric.
         Is used to check, whether the second low is violated. The factor can 
         be used to vary the mass flow rate of the working fluid, until no 
         violation is found (done in root finding).
@@ -122,31 +119,28 @@ class static_heat_exchanger:
 
         # fixed output temperature, secondary fluid
         s_out.set_state([self.T_out_s, s_in.properties.pressure], "TP")
-        if self.heating: 
+        if self.heating:
             condenser = 1
-        else: 
-                condenser = -1
-                
+        else:
+            condenser = -1
+
         self. h_in_out[1, 1] = dh_s = (
             s_out.properties.enthalpy - s_in.properties.enthalpy) * condenser
         self.m_dot_s = self.dQ / dh_s  # fixed heat flow, determines mass flow rate
-        
-        
-        outw = w_out.set_state([s_in.properties.temperature + 
+
+        outw = w_out.set_state([s_in.properties.temperature +
                                 self.dT_separation_min * condenser,
                                 w_in.properties.pressure], "TP")
         hw_max = outw[2]
         dh_w_max = np.abs(w_in.properties.enthalpy - hw_max)
         mw_max = self.dQ / dh_w_max
-        m_dot_w = mw_max * m_dot_w_factor # scaling for minimum approach T
+        m_dot_w = mw_max * m_dot_w_factor  # scaling for minimum approach T
         dh_w = dh_w_max / m_dot_w_factor
         h_out_w = h_in_w - condenser * dh_w
-       
+
         self. h_in_out[0, 0] = h_out_w
-        
+
         self. h_in_out[0, 1] = dh_w
-       
-        
         
 
         # check pinch, first secondary fluid
@@ -156,13 +150,13 @@ class static_heat_exchanger:
         values[:, 1] = s_out.properties.pressure
 
         s_array = s_out.set_state_v(values, given="HP")
-       
 
         # now working fluid:
-        h_array = np.linspace(self.h_in_out[0, 0], 
-                              self.h_in_out[0, 0] + self.h_in_out[0, 1] * condenser,  
+        h_array = np.linspace(self.h_in_out[0, 0],
+                              self.h_in_out[0, 0] +
+                              self.h_in_out[0, 1] * condenser,
                               self.points)
-       
+
         values = np.zeros((self.points, 2))
         values[:, 0] = h_array.T
         values[:, 1] = w_out.properties.pressure
@@ -170,12 +164,11 @@ class static_heat_exchanger:
         w_array = w_out.set_state_v(values, "HP")
         dTall = w_array[:, 0]-s_array[:, 0]
         return m_dot_w, dTall, w_array, s_array
-    
 
-    def pinch_root(self, factor):
+    def pinch_root(self, factor, verbose=False):
         """
         function for root-finding of the minimum approach temperature
-        
+
         a factor to divide the working fluid mass flow rate is varied. input
         for root
 
@@ -192,22 +185,25 @@ class static_heat_exchanger:
         """
         mw, dTs, w, s = self.pinch_calc(factor)
         if self.heating:
-            
+            if verbose: print("H", dTs.min() - self.dT_separation_min, dTs.min() ,self.dT_separation_min)
             return dTs.min() - self.dT_separation_min
         else:
-            
+            if verbose: print("HC",dTs.max() + self.dT_separation_min,dTs.max() , self.dT_separation_min)
             return (dTs.max() + self.dT_separation_min)
+
 
     def find_pinch(self):
         if self.heating:
-            start =1.05
-        else: start = .95
+            start = 1.05
+        else:
+            start = .95
         result = root(self.pinch_root, start)
         if result.success:
             return result.x
         else:
             print("root-finding problem!", result)
             return result.x
+
 
     def pinch_plot(self, factor):
         m_dot_w, dTall, w_array, s_array = self.pinch_calc(factor)
@@ -220,62 +216,58 @@ class static_heat_exchanger:
             "specific enthalpy flow per mass of secondary fluid / (J / kg)")
         ax.set_ylabel("temperature / (K)")
         ax.set_title("heat exchanger, simple")
-        
+
         return m_dot_w, dTall, w_array, s_array
 
 
 if __name__ == "__main__":
     # two test cases condenser and evaporator:
     FLUID = "Propane * Pentane"
-    FLS =  "Methanol" # "Water"  #
+    FLS = "Methanol"  # "Water"  #
     comp = [.50, 0.5]
     flm = fprop.FluidModel(FLUID)
     myFluid = fprop.Fluid(flm, comp)
-    
+
     secFlm = fprop.FluidModel(FLS)
     secFluid = fprop.Fluid(secFlm, [1.])
-    
+
     # Condenser, secondary fluid fixes all:
     sT_in = 300.0
     sT_out = 370.0
     sp_in = 5e5
     dH_min = 1e3
-    
+
     state_sec_in = secFluid.set_state([sT_in, sp_in], "TP")
     # working fluid
     dT_super = 5.
     T_dew = sT_out
-    state_in = myFluid.set_state([T_dew, 1.], "TQ") # find minimum pressure
-    
-    
-    T_in = T_dew + dT_super 
+    state_in = myFluid.set_state([T_dew, 1.], "TQ")  # find minimum pressure
+
+    T_in = T_dew + dT_super
     state_in = myFluid.set_state([myFluid.properties.pressure,
                                   myFluid.properties.temperature + dT_super], "PT")
     dT_min = 2.0
-    
-    hex0 = static_heat_exchanger([myFluid, secFluid], dH_min, sT_out, 
+
+    hex0 = static_heat_exchanger([myFluid, secFluid], dH_min, sT_out,
                                  dT_separation_min=dT_min)
     mw, dTall, w, s = hex0.pinch_calc(1.1)
     factor0 = hex0.find_pinch()
     mw0, dTall0, w0, s0 = hex0.pinch_plot(factor0)
-    
+
     # Evaporator:
-        
-    
+
     sT_in = 300.0
     sT_out = 276
     sp_in = 5e5
     dH_min = 1e3
-    
+
     state_sec_in = secFluid.set_state([sT_in, sp_in], "TP")
     dT_min = 2.0
     T_in = sT_out - dT_min
     state_in = myFluid.set_state([T_in, .1], "TQ")
     print("state in", state_in)
-    
-    
-    
-    hex0 = static_heat_exchanger([myFluid, secFluid], dH_min, sT_out, 
+
+    hex0 = static_heat_exchanger([myFluid, secFluid], dH_min, sT_out,
                                  dT_separation_min=dT_min)
     mw, dTall, w, s = hex0.pinch_calc(1)
     factor = hex0.find_pinch()

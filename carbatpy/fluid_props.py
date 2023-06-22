@@ -138,6 +138,15 @@ class Fluid:
             output[count, :] = self.set_state(value, given, wanted)
         self.state_v = output
         return output
+    
+    def print_state(self):
+        pr =self.properties
+        flm = self.fluidmodel
+        print(f"\n{flm.fluid}, composition: {self.composition}")
+        print(f"T:{pr.temperature:.2f} K, p: {pr.pressure/1e5 :.2f} bar,  h: {pr.enthalpy/1000: .2f} kJ/kg, s: {pr.entropy/1000:.3f} kJ/kg K\n")
+        if pr.quality>=0:
+            print(f"Quality: {pr.quality :.3f}")
+            
 
 
 if __name__ == "__main__":
@@ -149,6 +158,7 @@ if __name__ == "__main__":
     st1 = myFluid.set_state([300., 1e5], "TP",
                             _TRANS_STRING)
     print(st0, st1)
+    myFluid.print_state()
     # value_vec = np.array([[300, 1e5], [400, 1e5], [500, 1e5]])
     # stv = myFluid.set_state_v(value_vec, "TP")
 
