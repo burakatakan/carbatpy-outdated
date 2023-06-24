@@ -104,14 +104,24 @@ class Fluid:
         self.composition = composition
         self.option = option
         self.no_compounds = len(composition)
+        
+    def set_composition(self, composition):
+        self.composition = composition
 
-    def set_state(self, values, given="TP", wanted=_THERMO_STRING):
+    def set_state(self, values, given="TP", 
+                  wanted=_THERMO_STRING,
+                  composition =[]):
+        if composition == []:
+            composition = self.composition
+        else:
+            self.composition = composition
+        
         if self.fluidmodel.props == "REFPROP":
             state = self.fluidmodel.rp_instance.REFPROP2dll(
                 self.fluidmodel.fluid, given, wanted,
                 self.fluidmodel.units,
                 0, values[0], values[1],
-                self.composition)
+                composition)
 
             if state.ierr == 0:
                 if wanted == _THERMO_STRING:
@@ -159,6 +169,10 @@ if __name__ == "__main__":
                             _TRANS_STRING)
     print(st0, st1)
     myFluid.print_state()
+    myFluid.set_composition([.2,.8])
+    st0 = myFluid.set_state([300., 1e5], "TP", composition =[.35, .65])
+    myFluid.print_state()
+    
     # value_vec = np.array([[300, 1e5], [400, 1e5], [500, 1e5]])
     # stv = myFluid.set_state_v(value_vec, "TP")
 

@@ -6,7 +6,7 @@ Created on Sun May 21 08:51:33 2023
 """
 
 
-import CoolProp.CoolProp as CP
+#import CoolProp.CoolProp as CP
 
 import fluid_props as fprop
 import numpy as np
