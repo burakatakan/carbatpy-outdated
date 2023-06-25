@@ -590,7 +590,7 @@ class st_heat_exchanger_input:
         """
         Reads an Excel File with information about heat exchangers, fluids etc.
         is used within carbatpy and the module heat_exchanger (see there for the
-         specific output)
+        specific output)
 
         Parameters
         ----------

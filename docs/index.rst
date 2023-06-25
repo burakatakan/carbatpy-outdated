@@ -9,7 +9,7 @@ Welcome to carbatpy's documentation!
 Finally the module shall be able to modell Carnot Batteries in a 
 good depth. But we are at the beginning ...
 
-.. toctree::
+.. toctree:: docs
    :maxdepth: 4
    :caption: Contents: 
         
