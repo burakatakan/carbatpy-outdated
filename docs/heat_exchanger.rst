@@ -14,15 +14,15 @@ data from the yaml-file, starts the heat-exchanger calculations and stores
 everything. The hex_run_script.py file should be a good starting point.
 
    
-.. autoclass:: heat_exchanger.heat_exchanger
+.. autoclass:: componenets/heat_exchanger.heat_exchanger
     :members:
     :no-members:
     
-.. autoclass:: heat_exchanger.counterflow_hex
+.. autoclass:: componenets/heat_exchanger.counterflow_hex
     :members:
     :no-members:
 
     
-.. autoclass:: heat_exchanger.st_heat_exchanger_input
+.. autoclass:: componenets/heat_exchanger.st_heat_exchanger_input
     :members:
     :no-members:
