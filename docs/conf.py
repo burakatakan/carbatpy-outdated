@@ -18,7 +18,7 @@ sys.path.insert(0,os.path.abspath('../carbatpy'))
 #sys.path.insert(0,os.path.abspath(r'C:\Users\atakan\sciebo\Python\carbatpy'))
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 project = 'carbatpy'
-copyright = '2022, B. Atakan'
+copyright = '2023, B. Atakan'
 author = 'B. Atakan'
 release = '0.1'
 master_doc = 'docs/index'
