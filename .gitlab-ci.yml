@@ -3,7 +3,7 @@ test:
   stage: test
   script:
   - pip install -U sphinx
-  - sphinx-build -b html . public
+  - sphinx-build -c docs -b html . public
   only:
   - Version_1
   except:
@@ -12,7 +12,7 @@ test:
 pages:
   script:
   - pip install -r docs/requirements.txt
-  - sphinx-build -d _build/doctrees . _build/html
+  - sphinx-build -c docs -d _build/doctrees . _build/html
   - mv _build/html public
   artifacts:
     paths:
