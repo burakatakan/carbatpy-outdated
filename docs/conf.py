@@ -21,6 +21,7 @@ project = 'carbatpy'
 copyright = '2022, B. Atakan'
 author = 'B. Atakan'
 release = '0.1'
+master_doc = 'docs/index'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
