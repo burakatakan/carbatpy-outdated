@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+calculate a few characteristic numbers for a heat pump 
+
+running with a multicomponent mixture (5) and having 10 objectives, which are 
+calculated. To be usd in combination with a pymoo-Optimization. Towards 
+Carnot-battery fluid pre-selection.
+
 Created on Thu Jun 22 17:40:55 2023
 
 @author: atakan
@@ -9,11 +15,44 @@ import fluid_props as fprop
 import numpy as np
 
 
-v_names = ["delt_ex_destruct", "delt_ex_destruct_compr","dT_high",  "T_liq(p_low)","T_after compr irr",
+v_names = ["delt_ex_destruct", 
+           "delt_ex_destruct_compr",
+           "dT_high",  
+           "T_liq(p_low)",
+           "T_after compr irr",
            "T_glide(p_high)",
-           "quality_subcooled_throttle", "p_low", "p_high", "p_ratio"]   # , "$\Delta T$", "$UA_h$", "$UA_l$"]
+           "quality_subcooled_throttle", 
+           "p_low", 
+           "p_high", 
+           "p_ratio"]   # , "$\Delta T$", "$UA_h$", "$UA_l$"]
+OBJECTIVES = len(v_names)
+MIN_MAX = np.array([-1, -1, -1, -1, -1,1, -1,  1, -1, -1]) # which objective to minimize(-1)
 
 def dewpoints(input_all, fluid, fixed_points):
+    """
+    calculate a few characteristic numbers for a heat pump 
+
+    running with a multicomponent mixture (5) and having 10 objectives, which are 
+    calculated. To be usd in combination with a pymoo-Optimization.Pressures
+    are calculated according to the temperatures.
+
+    Parameters
+    ----------
+    input_all : array length 4
+        mole fractions of all but one component,sum must be <=1.
+    fluid : an fprop FLUID
+        a fluid mixture including property model (Refprop).
+    fixed_points : dictinary
+        with characteristic temperatures of the heat pump and isentropic
+        efficiency.
+
+    Returns
+    -------
+    an array with the objectives, e.g.: Exergy-destruction, tiotal and in the
+    throttle, pressure levels, pressure ratio, T-glide, lowest temperature.
+    see v_names
+
+    """
 
 # two test cases condenser and evaporator:
     x1, x2, x3, x4 = input_all
@@ -21,7 +60,7 @@ def dewpoints(input_all, fluid, fixed_points):
     comp = np.array([x1, x2, x3, x4, x5])
     if (x5 < 0) or (comp.sum() > 1.0000000001):
         # print(comp)
-        return np.ones((10))*1e9
+        return np.ones((OBJECTIVES))*1e9
     
     try:
         myFluid = fluid
@@ -67,7 +106,7 @@ def dewpoints(input_all, fluid, fixed_points):
     
     except:
         print(input_all, "Problem")
-        return np.ones((10)) * 1e9
+        return np.ones((OBJECTIVES)) * 1e9
     
     
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Using pymoo for the optimization of an  Carnot cycle with irreversible
-heat transfer (twice dT). Objective functions are power and efficiency
-The total heat exchanger area (times overall heat transfer coefficient)
-shall be divided between the two heat exchangers.
+Using pymoo for the optimization of a simple high-T heat pump.
+
+Running with a 5-components mixture and 10 objectives; compressor efficiency
+is constant.
 
 Created on Wed Jan  4 13:36:11 2023
 
@@ -17,15 +17,17 @@ from pymoo.core.problem import ElementwiseProblem
 from pymoo.optimize import minimize
 from pymoo.visualization.scatter import Scatter
 from scipy.optimize import root
-from fluid_screening import dewpoints, v_names
+from fluid_screening import dewpoints, v_names, OBJECTIVES, MIN_MAX
 import fluid_props as fprop
 import pandas as pd
 import seaborn as sns
+import yaml
 
 
 #  Variables:
 fixed_points = {
     "p_low": 1e5,
+    "p_high": 25e5,
     "T_hh": 370,
     "T_hl": 290,
     "T_lh": 290,
@@ -36,9 +38,10 @@ fixed_points = {
 FLUID = "Ethane * Propane * Isobutane * Butane * Pentane"
 FLS = "Methanol"  # "Water"  #
 comp = [.10, 0.4, .19, 0.2, .01]
+n_comp = len(comp)
 flm = fprop.FluidModel(FLUID)
 myFluid = fprop.Fluid(flm, comp)
-min_max = np.array([-1, -1, -1, -1, -1,1, -1,  1, -1, -1])
+min_max = MIN_MAX  # np.array([-1, -1, -1, -1, -1,1, -1,  1, -1, -1])
 
 #  Function to approximate (Carnot with irreversible heat transfer):
 
@@ -46,8 +49,8 @@ min_max = np.array([-1, -1, -1, -1, -1,1, -1,  1, -1, -1])
 class MyProblem(ElementwiseProblem):
 
     def __init__(self):
-        super().__init__(n_var=4,
-                         n_obj=10,
+        super().__init__(n_var=n_comp -1,
+                         n_obj=OBJECTIVES,
                          n_ieq_constr=3,
                          xl=np.array([0.00, 0.01, 0.01, 0.00]),
                          xu=np.array([0.1, 0.9, 0.9, 0.9]))
@@ -58,9 +61,9 @@ class MyProblem(ElementwiseProblem):
         # print(f_out)
 
         # the total T difference between Th and Tl should not be reverted
-        g1 = (x[0] + x[1] + x[2] + x[3]) - 1
-        g2 = -f_out[-3] + 1e5
-        g3 = -25e5 + f_out[-2]
+        g1 = np.sum(x) - 1
+        g2 = -f_out[-3] + fixed_points["p_low"]
+        g3 = -fixed_points["p_high"] + f_out[-2]
 
         out["F"] = f_out * min_max  # minimization: minus
         out["G"] = [g1, g2, g3]
@@ -98,7 +101,7 @@ paretofx = pd. DataFrame(-res.X.sum(axis=1)+1,
                          columns=[FLUID.split(" * ")[-1]])
 pareto_combine = pd.concat([pareto, paretox, paretofx], axis=1)
 T_hh = fixed_points["T_hh"]
-fname = f"fluidOpti_{T_hh}_00"
+fname = f"results/fluidOpti_{T_hh}_00"
 pareto_combine.to_csv(fname+"csv")
 # pareto_combine.to_csv(fname+"csv")
 
@@ -121,3 +124,10 @@ g.ax.yaxis.grid(True, "minor", linewidth=.25)
 g.despine(left=True, bottom=True)
 
 g.savefig(fname+".png")
+with open(fname+'.yaml', 'w') as file:
+    yaml.dump(FLUID, file)
+    yaml.dump(fixed_points, file)
+    for i, aa in enumerate(min_max):
+        yaml.dump((v_names[i], float(aa)), file)
+    
+    
