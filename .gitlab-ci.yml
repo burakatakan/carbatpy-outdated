@@ -4,7 +4,7 @@ pages:
   script:
   - pip install -r docs/requirements.txt
   - sphinx-build -c docs -d _build/doctrees . docs/_build/html
-  - cp _build/html public
+  - cp docs/_build/html public
   artifacts:
     paths:
     - public
