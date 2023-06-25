@@ -1,0 +1,47 @@
+!!python/object:__main__.heat_pump
+areas:
+- 0.2827433388230814
+- 0.6597344572538565
+bounds:
+- !!python/tuple
+  - 50000.0
+  - 490000.0
+- !!python/tuple
+  - 500000.0
+  - 3500000.0
+- !!python/tuple
+  - 0.0041
+  - 0.09
+calc_type: const
+composition:
+- - 0.55
+  - 0.01
+  - 0.43999999999999995
+compressor_eta: 0.65
+d_in:
+- 0.015
+delta_temp:
+- 15.0
+- 10.0
+fluid_names:
+- Propane * Pentane * Dimethylether
+fluids:
+- Propane * Pentane * Dimethylether
+heat_transfer_coefficient:
+- 1300
+- 250
+- 1300
+mass_flows:
+- 0.0068
+name: heatpump_0
+opitimization: false
+pressures:
+- 100000.0
+- 2200000.0
+props: REFPROP
+rootfind: true
+temperatures:
+- 273
+- 330
+time_dependence: false
+units: 21

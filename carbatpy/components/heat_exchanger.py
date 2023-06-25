@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Heat exchanger base class 
-and counterflow heat exchnager class are introduced
+Heat exchanger base class and counterflow heat exchanger class are introduced
 For the first, only the maximum possible heat flow rate s evaluated.
 For the counterflow heat exchanger at the moment the boundary value problem 
 is solved with constant overall heat transfer coefficient  along the axial 
@@ -9,7 +8,7 @@ coordinate is implemented, together with some graphical output.
 
 Fluid properties stem from REFPROP or CoolProp, the low-level interface is used.
 Planned are the convection coefficienets along the axial coordinate 
-shall be evaluated using appropriate Nu-correlations
+shall be evaluated using appropriate Nu-correlations 
 optimization will be implemented (Entropy minimization)
 perhaps pressure drop will be implemented to the bvp
 
@@ -30,6 +29,7 @@ from time import time
 import yaml
 from fluid_properties_rp import _fl_properties_names
 import pandas as pd
+import os
 props = "REFPROP"
 
 
@@ -60,7 +60,7 @@ class heat_exchanger:
             if "const" = does not vary along heat exchanger (default)
             if "calc" = calculated from Nusselt correlation 
             along heat exchanger
-        name: string.
+        name : string.
             name of the heat-exchanger, default = "HEX_0"
 
         Returns
@@ -114,6 +114,7 @@ class heat_exchanger:
                                 self.fluids[1], props=self.props,
                                 composition=self.compositions[1],
                                 RP=self.RP[1])
+        # print("final states:", final_states)
         for n in range(2):
             q_dot[n] = self.mass_flows[n] * (final_states[n, 2]
                                              - state_variables[n, 2])
@@ -133,9 +134,9 @@ class heat_exchanger:
 
 class counterflow_hex(heat_exchanger):
     def __init__(self, fluids, mass_flows, pressures, enthalpies, length,
-                 diameters, U=10., no_tubes=1, no_points=100,
-                 calc_type="const", name="HEX_0", compositions=[[1.0], [1.0]],
-                 props="REFPROP", units=21):
+                 diameters, U=10., no_tubes=1, no_points=100, props="REFPROP",
+                 compositions=[[1.0], [1.0]], calc_type="const", name="HEX_0",
+                 units=21):
         """
         Counter flow heat exchanger class initialization, for double-pipe 
         heat exchangers
@@ -152,7 +153,7 @@ class counterflow_hex(heat_exchanger):
         pressures : list or numpy-array length 2
             initial pressures of each fluid.
         enthalpies : list or numpy-array length 2
-            initial pressures of each fluid.
+            initial enthalpies of each fluid.
         length : float
             heat exchanger length in m.
         diameters : array length 2
@@ -167,14 +168,14 @@ class counterflow_hex(heat_exchanger):
             if "const" = does not vary along heat exchanger (default)
             if "calc" = calculated from Nusselt correlation 
             along heat exchanger
-        name: string.
+        name : string.
             name of the heat-exchanger, default = "HEX_0"
         composition s: list of lists
             in each list the mole fraction of each compound in each fluid is
             listed. Two pure fluids: [[1.0],[1.0]
-        props: "REFPROP or "CoolProp""
+        props : "REFPROP or "CoolProp""
             module to evaluate fluid properties
-        units: integer
+        units : integer
             selection of units (for REFPROP, generally SI)
 
 
@@ -186,8 +187,8 @@ class counterflow_hex(heat_exchanger):
         """
         calculate = True
         self.fluids = fluids
+        self.fluid_names = fluids  # when changing fluids to "" (later)
 
-        self.fluids = ["", ""]
         self.compositions = compositions
         self.props = props
         self.units = units
@@ -206,15 +207,23 @@ class counterflow_hex(heat_exchanger):
         self.area = self.length * self.perimeter
         self.UA = self.area * self.U
         if calculate:
-            self.RP = [setRPFluid(fluids[0]), setRPFluid(fluids[1])]
+            import sys
+            from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary as modwf
+            
+            from ctREFPROP.ctREFPROP import REFPROPFunctionLibrary as modsf
+            self.RP = [setRPFluid(self.fluids[0],modwf,'RPPREFIX'), 
+                       setRPFluid(self.fluids[1], modsf,'RPPREFIXs')]
+            # IF This is set, the entering state of the first fluidof the heat exchanger seems to be wrong
+            
             qm, qd, f_states = self.q_max(1)
             self.min_flow = np.where(qd == qm)[0][0]
-            # print(qm, self.min_flow)
+            
             self.qm_specific = qm / self.mass_flows[self.min_flow]
             self.h_in = np.linspace(self.enthalpies[0],  # maximum changes in enthalpy
-                                    self.enthalpies[0] + qm/2, no_points)
-            self.h_out = np.linspace(self.enthalpies[1] - qm/2,
+                                    self.enthalpies[0] + qm, no_points)
+            self.h_out = np.linspace(self.enthalpies[1] - qm,
                                      self.enthalpies[1], no_points)
+            self.fluids = ["", ""]
 
     def energy(self, x, h):
         """
@@ -241,22 +250,23 @@ class counterflow_hex(heat_exchanger):
             both changes in specific enthalpy in positive x-direction in J/(kg m).
 
         """
+        Ti = np.zeros((2,len(x)))
+        for i in range(2):
+            T = hp_v(h[i], self.pressures[i], self.fluids[i], units=self.units,
+                         props=self.props, option=1, composition=self.compositions[i],
+                         RP=self.RP[i])[0]
+            Ti[i,:] =T
+            # print(i,self.fluids[i], self.compositions[i])
 
-        T1 = hp_v(h[1], self.pressures[1], self.fluids[1], units=self.units,
-                  props=self.props, option=1, composition=self.compositions[1],
-                  RP=self.RP[1])[0]
-        T0 = hp_v(h[0], self.pressures[0], self.fluids[0], units=self.units,
-                  props=self.props, option=1, composition=self.compositions[0],
-                  RP=self.RP[0])[0]
-        q_konv = T1-T0
+        q_konv = Ti[1,:]-Ti[0,:]
 
-        dh0 = self.U * self.perimeter / self.mass_flows[0]*q_konv
-        dh1 = self.U * self.perimeter / self.mass_flows[1]*q_konv
+        dh0 = self.U * self.perimeter / self.mass_flows[0] * q_konv
+        dh1 = self.U * self.perimeter / self.mass_flows[1] * q_konv
         return np.array([dh0, dh1])
 
     def bc(self, ha, hb):
         """
-        two boundary conditions for bvp-solver (scipy-optimize) needed
+        two boundary conditions for bvp-solver (scipy.integrate) needed
         here: the enthalpies of the inner fluid at x=0 and the enthalpy of 
         the outer fluid at the end of the heat exchanger at x=length
 
@@ -291,8 +301,8 @@ class counterflow_hex(heat_exchanger):
 
         """
         y = np.zeros((2, self.no_points))
-        y[0, :] = self.h_in
-        y[1, :] = self.h_out
+        y[0, :] = self.enthalpies[0]
+        y[1, :] = self.enthalpies[1]
 
         result = solve_bvp(self.energy, self.bc, self.x, y, tol=5e-3,
                            max_nodes=1000)
@@ -362,21 +372,34 @@ class counterflow_hex(heat_exchanger):
                 if verbose:
                     print("Entropy production rate:%3.4f W/K" % (ds))
             # Print all to an Excel-File:
-            res0={"ds":ds, "dq":dh2}
+            res0 = {"ds": ds, "dq": dh2}
             nx, ny = np.shape(states_0)
-            alles = np.zeros((2*nx + 1,ny))
-            alles[0,:] = result.x
+            alles = np.zeros((2*nx + 1, ny))
+            alles[0, :] = result.x
             alles[1:nx+1] = states_0
             alles[nx+1:] = states_1
-            names =("x",*_fl_properties_names[:6]*2)
-            pd0=pd.DataFrame(alles.T,columns=names)
-            #zzz = pd.DataFrame(dict( (key, value) for (key, value) in self.__dict__.items()))
-            res0=pd.DataFrame(res0,["total"])
-            with pd.ExcelWriter(fname+".xlsx") as writer: 
-                pd0.to_excel(writer, sheet_name="results")
-                #zzz.to_excel(writer, sheet_name="input")
-                res0.to_excel(writer, sheet_name="overallRes")
-                
+            names=["x"]  # unique  column-names:
+            for ext in["_fl1","_fl2"]: 
+                for m in _fl_properties_names[:6]: 
+                    names.append(m+ext)
+
+            pd0 = pd.DataFrame(alles.T, columns=names)
+            # zzz = pd.DataFrame(dict( (key, value) for (key, value) in self.__dict__.items()))
+            res0 = pd.DataFrame(res0, ["total"])
+            mode ="w"
+            if os.path.exists(fname+".xlsx"): mode ="a"
+            
+            try:
+                with pd.ExcelWriter(fname+".xlsx", mode= mode) as writer:
+                    pd0.to_excel(writer, sheet_name="results")
+                    # zzz.to_excel(writer, sheet_name="input")
+                    res0.to_excel(writer, sheet_name="overallRes")
+            except:
+                with pd.ExcelWriter(fname+".xlsx", mode="w") as writer:
+                    pd0.to_excel(writer, sheet_name="results")
+                    # zzz.to_excel(writer, sheet_name="input")
+                    res0.to_excel(writer, sheet_name="overallRes")
+
             return states_0, states_1, ds, dh2
         else:
             if verbose:
@@ -443,8 +466,6 @@ class st_heat_exchanger_input:
             along heat exchanger
         name : string.
             name of the heat-exchanger, default = "HEX_0"
-        Tin : list of 2 floats
-            temperatures of the two fluids entering
         no_tubes : integer
             number of tubes within the single shell
         no_points : integer
@@ -472,10 +493,9 @@ class st_heat_exchanger_input:
         self.enthalpies = enthalpies
 
         self.calc_type = calc_type
-        if calc_type == "const":
-            self.U = U
+        self.heat_transfer_coefficient = U
         self.name = name
-        self.Tin = Tin
+        # self.temperature_in = Tin
         self.no_tubes = no_tubes
         self.no_points = no_points
         self.d_in = d_in
@@ -561,10 +581,158 @@ class st_heat_exchanger_input:
 
         """
         return (self.fluids, self.mass_flows, self.pressures, self.enthalpies,
-                self.length, self.d_in, self.U, self.no_tubes, self.no_points,
+                self.length, self.d_in, self.heat_transfer_coefficient,
+                self.no_tubes, self.no_points, self.props, self.composition,
                 self.calc_type, self.name,
-                self.composition, self.props,
                 self.units)
+
+    def read_hex_file(fn, out, all_out=False):
+        """
+        Reads an Excel File with information about heat exchangers, fluids etc.
+        is used within carbatpy and the module heat_exchanger (see there for the
+         specific output)
+
+        Parameters
+        ----------
+        fn : string
+            name of an excel-file with at least 4 sheets as mentioned above, which 
+            list the variable names, values and further parameters and comments.
+        out : string 
+            only "HEXSimple" implemented so far, for the simple heat exchanger 
+            calculations with actual fluid properties in a counterflow 
+            configuration.
+        all_out : boolean
+            if True a list with 4 Instances with variable names and values are 
+            returned together with all local variables (dictionaries) for usage
+            in other modules.
+
+        Returns
+        -------
+        list 
+            if HEXSimple: a list with the required values for setting up the problem
+            if (internally).
+            if all_out is True, see above.
+
+        """
+
+        druck = False  # printing?
+        xl = pd.ExcelFile(fn, engine='openpyxl')   # Einlesen
+        if druck:
+            print(f"sheet names in {fn}: {xl.sheet_names}")
+
+        data = []
+        dfs = []
+        outputs = []
+
+        for sheet in xl.sheet_names:
+            blatt0 = sheet    # erstes Blatt in der Datei
+            df1 = xl.parse(blatt0)
+            dfs.append(df1)
+            # d = df1.to_numpy()
+            # data.append(d)
+            n_app = ""
+            c_names = df1.columns
+            dict_list = locals()[blatt0] = [v.dropna().to_dict()
+                                            for k, v in df1.iterrows()]
+            bi = locals()[blatt0+"_Instance"] = type(blatt0, (object,), {})
+            if blatt0 == "Geometry":
+                Geometry_Instance = bi
+            elif blatt0 == "Fluid_1":
+                Fluid1_Instance = bi
+            elif blatt0 == "Fluid_2":
+                Fluid2_Instance = bi
+            elif blatt0 == "Problem_description":
+                Problem_description = bi
+            else:
+                print(f"Warning: sheet {blatt0} is not used!")
+
+            fluids = []
+            # print(blatt0, dict_list)
+
+            for di in dict_list:
+                # name a class using a string
+                # add an attribute name from a strng
+                setattr(bi, di["variable_name"], di)
+
+            if sheet[:3] == 'Flu':
+
+                fl_names = []
+                compo = []
+
+                fluid_no = bi.number_compounds["value"]
+                for ii in range(fluid_no):
+                    fname = getattr(bi, "fl"+str(ii+1))
+                    fl_names.append(fname['name_fluid'])
+
+                    compo.append(float(fname["value"]))
+                    if druck:
+                        print(ii, compo, 'fl'+str(ii+1), fl_names)
+
+                if fluid_no > 1:
+                    if druck: print(fl_names, "---")
+                    fluids = "*".join(fl_names)
+
+                else:
+                    fluids = fl_names[0]
+                state_in = tp(float(bi.T_in["value"]),
+                              float(bi.p_in["value"]),
+                              fluids, compo, props=bi.props["value"])
+                # print(state_in)
+                enthalpy = state_in[2]
+
+                test = hp(enthalpy,
+                          float(bi.p_in["value"]),
+                          fluids, compo, props=bi.props["value"])
+
+                
+                setattr(bi, "composition_all", compo)
+                setattr(bi, "fluidNamesREFPROP", fluids)
+                setattr(bi, "enthalpy", enthalpy)
+                dict_list.append({"composition_all": compo,
+                                 "fluidNamesREFPROP": fluids})
+
+            outputs.append(bi)
+
+        xl.close()
+        if all_out:
+            return outputs, locals()
+
+        elif out == "HEXsimple":  # BA Reihnfolge prüfen
+            if Fluid1_Instance.props["value"] == Fluid2_Instance.props["value"]:
+                props = Fluid1_Instance.props["value"]
+            else:
+                print(
+                    f"Props should be the same for both fluids, check input file {fn}")
+                props = "Error!"
+
+            outputHex = [[Fluid1_Instance.fluidNamesREFPROP,
+                          Fluid2_Instance.fluidNamesREFPROP],
+                         [Fluid1_Instance.m_dot["value"],
+                         Fluid2_Instance.m_dot["value"]],
+                         [Fluid1_Instance.p_in["value"],
+                         Fluid2_Instance.p_in["value"]],
+                         [Fluid1_Instance.enthalpy,
+                         Fluid2_Instance.enthalpy],
+                         Geometry_Instance.length["value_1"],
+                         [Geometry_Instance.d_in["value_1"],
+                         Geometry_Instance.d_in["value_2"]],
+                         Geometry_Instance.U["value_1"],
+                         Geometry_Instance.tubes["value_1"],
+                         Geometry_Instance.no_points["value_1"],
+                         props,
+                         [Fluid1_Instance.composition_all,
+                         Fluid2_Instance.composition_all],
+                         Geometry_Instance.calc_type["value_1"],
+                         Geometry_Instance.hex_name["value_1"],
+                         Fluid1_Instance.units["value"]
+                         ]
+            hexin = st_heat_exchanger_input(*outputHex,)
+            # all what is needed for heat_exchanger.counterflow_hex
+            print("Properties from input file (Excel):\n", outputHex)
+            return hexin  # outputHex
+
+        else:
+            print(f"{out} is not implemented yet!")
 
 
 if __name__ == "__main__":
@@ -630,7 +798,8 @@ if __name__ == "__main__":
     tf = time()
 
     print("time:", tf-t0, tf-t1)
-    f1, f2, ds, dq = heat_ex.he_state(res, 6)  # evaluate results (and plot)
+    f1, f2, ds, dq = heat_ex.he_state(
+        res, 6, "new.x")  # evaluate results (and plot)
     ex_in = heat_ex.exergy_entering()
     print("Entropy production rate: %2.2e W/K, exergy loss rate %3.3f W, dq %3.2f"
           % (ds, ds * T0, dq))

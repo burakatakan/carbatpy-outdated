@@ -12,7 +12,7 @@ can be calculated for a state of known h and p.
 For REFPROP two usages of hp, Tp etc. are possible:
 Passing a string with the fluid name and compositon, properties etc.
 (This sometimes leads to trouble, when having many function calls >1E5 and
- it is slower). selected instance (RP) will be used throughout.
+it is slower). selected instance (RP) will be used throughout.
 
 Or:First calling setPRFluid with the fluid name string. This generates an 
 instance of REFPROP for this fluid (mixture), which has to be passed to the 
@@ -30,6 +30,7 @@ import os
 from time import time
 
 os.environ['RPPREFIX'] = r'C:/Program Files (x86)/REFPROP'
+os.environ['RPPREFIXs'] = r'C:/Program Files (x86)/REFPROP/secondCopyREFPROP'
 _props = "REFPROP"  # or "CoolProp"
 _fl_properties_names = ("Temperature", "Pressure", "spec. Enthalpy",
                         "spec. Volume","spec. Entropy", "quality", 
@@ -52,7 +53,7 @@ else:
 __Tenv__ = 283.15  # Temp. of the environment in K
 __penv__ = 1.013e5  # Pressure of the environment in Pa
 
-def setRPFluid(fluid):
+def setRPFluid(fluid, modwf = REFPROPFunctionLibrary, name='RPPREFIX'):
     """
     A new instnce of Refpropdll for the given fluid. It can then be called using fluid =""
 
@@ -67,9 +68,14 @@ def setRPFluid(fluid):
         for further usage.
 
     """
-    SP = REFPROPFunctionLibrary(os.environ['RPPREFIX']) #secondary fluid
-    SP.SETPATHdll(os.environ['RPPREFIX'])
-    SP.SETFLUIDSdll(fluid)
+    
+
+    SP = modwf(os.environ[name]) #secondary fluid
+    SP.SETPATHdll(os.environ[name])
+    ierr = SP.SETFLUIDSdll(fluid)
+    if ierr != 0: 
+        print(f"Fehler in setfluid {ierr}")
+        print(SP.ERRMSGdll(ierr))
     return SP
     
     
@@ -180,8 +186,8 @@ def hp(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
             o = RP.REFPROP2dll(
                 fluid, "HP", "T;D;S;QMASS;CP;VIS;TCX;PRANDTL;KV", units, 0, h, p, composition)
             alle = [o.Output[0], p, h, 1/o.Output[1], *o.Output[2:9]]
-            if alle[8] < 0:
-                print("error in hp, probably saturated")
+            if o.ierr > 0:
+                print(f"error in hp, {o.ierr, o.herr}")
                 print("alle in hp", alle, o)
         if option == 1:
             o = RP.REFPROP2dll(fluid, "HP", "T;D;S;QMASS",
@@ -201,6 +207,7 @@ def hp(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
             alle = [_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]
         elif option == 1:
             alle = [_temp, p,  h, 1/rho, s, x]
+    else: print(f"Warning: props not set or invalid, actual value: {props}")
     return np.array(alle)
 
 
@@ -244,8 +251,9 @@ def uv(u, v, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
             o = RP.REFPROP2dll(
                 fluid, "ED", "T;p;S;q;CP;VIS;TCX;PRANDTL;KV;H", units, 0, u, 1/v, composition)
             alle = [*o.Output[0:2], o.Output[9], v,o.Output[2], *o.Output[2:9]]
-            if alle[8] < 0:
-                print("error in uv, probably saturated")
+            if o.ierr > 0:
+                print(f"error in uv, {o.ierr, o.herr}")
+                print("alle in uv", alle, o)
         if option == 1:
             o = RP.REFPROP2dll(fluid, "ED", "T;p;S;QMASS;H",
                                units, 0, u, 1/v, composition)
@@ -263,6 +271,7 @@ def uv(u, v, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
         #     alle = [_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]
         # elif option == 1:
         #     alle = [_temp, p,  h, 1/rho, s, x]
+    else: print(f"Warning: props not set or invalid, actual value: {props}")
     return np.array(alle)
 
 
@@ -303,6 +312,9 @@ def sp(s, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
     """
     if props == "REFPROP":
         o = RP.REFPROP2dll(fluid, "SP", "T;D;H;QMASS", units, 0, s, p, composition)
+        if o.ierr > 0:
+            print(f"error in sp, {o.ierr, o.herr}")
+            #print("alle in sp",  o)
         if option == 0:
             alle = []
         if option == 1:
@@ -321,6 +333,7 @@ def sp(s, p, fluid="", composition=[1.0], option=1, units=_units, props=_props, 
             alle = [_temp, p,  h, 1/ rho, s,x,cp, mu,  lambda_s, prandtl, phase]
         elif option == 1:
             alle = [_temp, p,  h, 1/rho, s, x]
+    else: print(f"Warning: props not set or invalid, actual value: {props}")
     return np.array(alle)
 
 
@@ -344,10 +357,10 @@ def hp_v(h, p, fluid="", composition=[1.0], option=1, units=_units, props=_props
     for _i in range(_n):
         if np.isscalar(p):
             alle[:, _i] = hp(h[_i], p, fluid, composition, option,
-                             units, props)
+                             units, props,RP)
         else:
             alle[:, _i] = hp(h[_i], p[_i], fluid, composition, option,
-                             units, props)
+                             units, props, RP)
     return alle
 
 
@@ -390,6 +403,9 @@ def tp(temp, p,  fluid="", composition=[1.0], option=1, units=_units,
     if props == "REFPROP":
         o = RP.REFPROP2dll(fluid, "TP", "H;D;S;QMASS", units,
                            0, temp, p, composition)
+        if o.ierr > 0:
+            print(f"error in tp, {o.ierr, o.herr}")
+            print("alle in tp", temp, p,fluid,  o)
         if option == 0:
             alle = []
 
@@ -417,6 +433,7 @@ def tp(temp, p,  fluid="", composition=[1.0], option=1, units=_units,
                              lambda_s, prandtl, phase])
         elif option == 1:
             return [temp, p,  h, 1/rho, s,  x]
+    else: print(f"Warning: props not set or invalid, actual value: {props}")
 
     return np.array(alle)
 #  below must be checked!
@@ -455,6 +472,10 @@ def p_prop_sat(p,  fluid="", composition=[1.0], option=1, units=_units,
             if option == 0:
                 o = RP.REFPROP2dll(
                     fluid, "PQ", "T;H;D;S;CP;VIS;TCX;PRANDTL;KV", units, 0, p, qq, composition)
+                if o.ierr > 0:
+                    print(f"error in p_prop_sat, {o.ierr, o.herr}")
+                    print("alle in p_prop_sat", alle, o)
+                    
                 alle = [o.Output[0], p, o.Output[1], 1 /
                         o.Output[2], o.Output[3], qq, *o.Output[4:9]]
 
@@ -530,6 +551,9 @@ def T_prop_sat(temp,  fluid="", composition=[1.0], option=1, units=_units,
                                    units, 0, temp, qq, composition)
                 alle = [temp, o.Output[0],  o.Output[1],
                         1 / o.Output[2], o.Output[3], qq]
+            if o.ierr > 0:
+                print(f"error in T_prop_sat, {o.ierr, o.herr}")
+                print("alle in T_prop_sat", alle, o)
 
         elif props == "CoolProp":
             fluid.update(CP.QT,  qq, temp)
@@ -589,13 +613,16 @@ def prop_pq(p, q, fluid="", composition=[1.0], option=1, units=_units,
 
     if props == "REFPROP":
         o = RP.REFPROP2dll(fluid, "PQ", "T;H;D;S", units, 0, p, q, composition)
-        if option == 0:
-            alle = []
-
-        elif option == 1:
-            alle = [o.Output[0], p, o.Output[1],
-                    1 / o.Output[2], o.Output[3], q]
-
+        if o.ierr ==0:
+            if option == 0:
+                alle = []
+    
+            elif option == 1:
+                alle = [o.Output[0], p, o.Output[1],
+                        1 / o.Output[2], o.Output[3], q]
+            
+        else:
+            print(f"prop_pq-problem:{o.ierr, o.herr}")
     elif props == "CoolProp":
         fluid.update(CP.PQ_INPUTS, p, q)
         reihe = [CP.iT, CP.iHmass, CP.iQ, CP.iSmass, CP.iDmass, CP.iPrandtl, CP.iPhase,
@@ -647,12 +674,16 @@ def prop_Tq(T, q, fluid="", composition=[1.0], option=1, units=_units,
 
     if props == "REFPROP":
         o = RP.REFPROP2dll(fluid, "TQ", "P;H;D;S", units, 0, T, q, composition)
-        if option == 0:
-            alle = []
-
-        elif option == 1:
-            alle = [T, o.Output[0], o.Output[1],
-                    1 / o.Output[2], o.Output[3], q]
+        if o.ierr ==0:
+            if option == 0:
+                alle = []
+                print("Option not implemented!")
+    
+            elif option == 1:
+                alle = [T, o.Output[0], o.Output[1],
+                        1 / o.Output[2], o.Output[3], q]
+        else:
+            print(f"propTq-problem:{o.ierr, o.herr}")
 
     elif props == "CoolProp":
         fluid.update(CP.TQ_INPUTS, T, q)
@@ -698,19 +729,21 @@ if __name__ == "__main__":
     elif _props == "REFPROP":
         # Fluid --------------------------------
         fluid_s = "Propane * Pentane"
-        wf = setRPFluid(fluid_s)
+        wf = setRPFluid(fluid_s,REFPROPFunctionLibrary)
         fluid_s =""
         comp = [.4, 0.6]
         #secondary_fluid = CP.AbstractState("TTSE&HEOS", fluid_s)
         # interesting, when using "BICUBIC&HEOS" the exergy of the ambient state is 0.15!
         t0 = time()
         state_data = tp(temp_0_s, p_sur, fluid_s, composition=comp,RP=wf)
+        st2 =sp(state_data[4],p_sur,fluid_s,composition=comp,RP=wf)
+        print("sp", st2)
         print(state_data, time()-t0)
         print(hp(state_data[2], p_sur, fluid_s, composition=comp, RP=wf))
         
         # new Fluid:
         fluid_s = "Water"
-        wf = setRPFluid(fluid_s)  # new instance !
+        wf = setRPFluid(fluid_s, REFPROPFunctionLibrary)  # new instance !
         fluid_s =""
         t0 = time()
         alles = p_prop_sat(p_0, fluid_s, option=0, RP=wf)
