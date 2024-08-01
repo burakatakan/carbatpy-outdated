@@ -1,6 +1,10 @@
 # carbatpy
 Modeling Carnot Batteries (Thermal Energy Storage)
 
+## This is the old version, we migrated!
+The new Version is here: https://git.uni-due.de/spp-2403/td-ude/carbatpy
+
+
 This is a project aiming to model thermal energy storages using heat pumps for 
 charging, organic Rankine cycles (ORC) for discharging and different kinds of 
 storages.
