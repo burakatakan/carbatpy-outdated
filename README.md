@@ -1,4 +1,4 @@
-# carbatpy
+# carbatpy-outdated
 Modeling Carnot Batteries (Thermal Energy Storage)
 
 ## This is the old version, we migrated!
